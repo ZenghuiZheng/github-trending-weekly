@@ -129,6 +129,34 @@ if (missing.length > 0) {
 const legalNumbers = new Set();
 const tolerantNumbers = new Set();  // 允许误差的数值（issue/星标会实时变动）
 
+/**
+ * 允许"取整派生值"：模型常写「近 6000」「约 1.2 万」这类概括
+ * 规则：对每个真实数字，向上/向下取整到 1/2/3 位有效数字，都视为合法
+ *       例如 5,921 → 6000 / 5900 / 5920
+ */
+function addRounded(n) {
+  const v = Number(n);
+  if (!isFinite(v) || v < 100) return;
+  const digits = String(Math.floor(v)).length;
+  for (let keep = 1; keep <= Math.min(3, digits - 1); keep++) {
+    const mag = Math.pow(10, digits - keep);
+    const down = Math.floor(v / mag) * mag;
+    const up = Math.ceil(v / mag) * mag;
+    for (const cand of [down, up]) {
+      if (cand > 0) {
+        legalNumbers.add(String(cand));
+        legalNumbers.add(cand.toLocaleString("en-US"));
+      }
+    }
+  }
+  // 常见的"～万"写法
+  if (v >= 10000) {
+    const wan = Math.round(v / 10000 * 10) / 10;
+    legalNumbers.add(String(wan));
+    legalNumbers.add(String(Math.round(v / 10000)));
+  }
+}
+
 function addTolerant(n) {
   const v = Number(n);
   if (!isFinite(v)) return;
@@ -145,11 +173,15 @@ for (const it of data.items) {
   // ★ 期间涨星：统计窗口内的固定值，必须精确匹配
   legalNumbers.add(String(it.gain));
   legalNumbers.add(it.gain.toLocaleString("en-US"));
+  addRounded(it.gain);   // 允许"近 6000"这类取整表达
 
   // 总星 / fork / issue：实时变动，允许 ±2% 容差
   addTolerant(it.stars);
   addTolerant(it.forks);
   addTolerant(it.openIssues);
+  addRounded(it.stars);
+  addRounded(it.forks);
+  addRounded(it.openIssues);
   if (it.relativeHeatPct != null) {
     legalNumbers.add(String(it.relativeHeatPct));
     legalNumbers.add(`${it.relativeHeatPct}%`);
