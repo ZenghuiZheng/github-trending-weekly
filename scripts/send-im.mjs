@@ -76,7 +76,7 @@ export function buildFeishuCard(data, trendText, report = null) {
   const totalGain = data.items.reduce((s, x) => s + x.gain, 0);
 
   const trend = (trendText || "").replace(/\*\*/g, "").replace(/\n+/g, " ").trim();
-  const trendShort = trend.length > 260 ? trend.slice(0, 258) + "…" : trend;
+  const trendShort = trend;  // 趋势完整展示，不截断
 
   const digest = report ? buildDigest(report, data) : [];
   const esc = (t) => String(t || "").replace(/[<>]/g, "");
@@ -153,7 +153,7 @@ export function buildWecomMarkdown(data, trendText, report = null) {
   const totalGain = data.items.reduce((s, x) => s + x.gain, 0);
 
   const trend = (trendText || "").replace(/\*\*/g, "").replace(/\n+/g, " ").trim();
-  const trendShort = trend.length > 180 ? trend.slice(0, 178) + "…" : trend;
+  const trendShort = trend;  // 趋势完整展示，不截断
 
   const digest = report ? buildDigest(report, data) : [];
 

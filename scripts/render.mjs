@@ -275,14 +275,25 @@ export function renderEmailHTML(report, data) {
     const f = extractFields(item);
     const st = extractStats(item);
     const url = item.repo ? `https://github.com/${item.repo}` : "#";
+    // 清洗：剔除任何形似安装命令的句子片段（用户要求 PDF 不留安装内容）
+    const stripInstallCmds = (text) => {
+      if (!text) return text;
+      const CMD = /\b(npm|npx|pnpm|yarn|pip|pipx|uv|cargo|go|brew|apt|apt-get|yum|dnf|docker|docker-compose|git clone|curl|wget|winget|scoop|choco|conda|make|bash|sh)\b[^。；;\n]{0,80}/gi;
+      return text
+        .split(/(?<=[。；;])/)
+        .filter((seg) => !CMD.test(seg))
+        .join("")
+        .trim();
+    };
+
     const fields = [
-      ["是什么", f.what],
-      ["解决什么", f.problem],
-      ["为什么火", f.why],
+      ["是什么", stripInstallCmds(f.what)],
+      ["解决什么", stripInstallCmds(f.problem)],
+      ["为什么火", stripInstallCmds(f.why)],
       ["时间", f.time],
-      ["上手", f.install],
-      ["边界", f.boundary],
-      ["状态", f.license],
+      // 「上手/安装」字段已按用户要求移除，不再输出到邮件与 PDF
+      ["边界", stripInstallCmds(f.boundary)],
+      ["状态", stripInstallCmds(f.license)],
     ].filter(([, v]) => v);
 
     const rows = fields.map(([k, v]) => `
@@ -381,7 +392,7 @@ export function renderIMText(report, data) {
   const dateLabel = isMonthly ? `${W.year}年${W.month}月` : `${W.startISO}~${dateOf(W.endISO)}`;
 
   const trend = (report.trendText || "").replace(/\*\*/g, "").replace(/\n+/g, " ").trim();
-  const trendShort = trend.length > 150 ? trend.slice(0, 148) + "…" : trend;
+  const trendShort = trend;  // 趋势完整展示，不截断
 
   const lines = [];
   lines.push(`📊 **GitHub ${isMonthly ? "月" : "周"}度开源热榜 · ${dateLabel}**`);
