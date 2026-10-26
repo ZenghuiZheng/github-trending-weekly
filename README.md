@@ -7,7 +7,7 @@
 ## 它做什么
 
 ```
-GitHub Actions（不占你的电脑）
+GitHub Actions
 ├── 每周一 00:00（北京）  抓取 Trending since=weekly，按"本周新增 Star"降序
 ├── 每周一 07:00          调用 DeepSeek 撰写报告
 ├── 每周一 09:00          校验 → 生成 PDF → 发邮件 → 推飞书/企微 → 提交回仓库
@@ -15,13 +15,13 @@ GitHub Actions（不占你的电脑）
 ├── 每月末 07:00          撰写月报 + 连续霸榜统计
 └── 次月 1 日 09:00       推送
         ↓ git push
-本地 D:\汇报（Windows 计划任务：登录时 + 每日 09:05 自动 git pull）
+本地（Windows 计划任务：登录时 + 每日 09:05 自动 git pull）
 ```
 
 ## 目录结构
 
 ```
-D:\汇报\
+工作地址\
 ├── 周总结\
 │   └── Github每周开源热榜—2026-10-19至2026-10-25.md
 ├── 月总结\
@@ -41,12 +41,11 @@ D:\汇报\
 
 ---
 
-## 首次部署（你需要做的 6 步）
+## 首次部署
 
 ### 1. 建 GitHub 仓库并推送
 
 ```bash
-cd D:\汇报
 git init
 git add .
 git commit -m "初始化"
@@ -91,8 +90,6 @@ gh repo create github-trending-weekly --public --source=. --push
 cp config.example.json config.json
 # 编辑 config.json 填入同样的值
 ```
-
-`config.json` 已在 `.gitignore` 中，不会被提交。
 
 ### 5. 手动触发一次测试
 
