@@ -15,7 +15,7 @@ on:
         description: "执行阶段"
         required: false
         type: choice
-        options: ["", "capture", "write", "deliver"]
+        options: ["", "all", "capture", "write", "deliver"]
       force:
         description: "强制运行（忽略月末判断，用于调试）"
         required: false

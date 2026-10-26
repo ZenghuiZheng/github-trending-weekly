@@ -15,7 +15,7 @@ on:
         description: "执行阶段（留空则按当前时间自动判断）"
         required: false
         type: choice
-        options: ["", "capture", "write", "deliver"]
+        options: ["", "all", "capture", "write", "deliver"]
       skip_im:
         description: "跳过 IM 推送"
         required: false
