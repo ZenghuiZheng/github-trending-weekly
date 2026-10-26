@@ -286,12 +286,10 @@ export function renderEmailHTML(report, data) {
         .trim();
     };
 
+    // 邮件与 PDF 只输出四项：是什么 / 解决什么 / 边界 / 状态
     const fields = [
       ["是什么", stripInstallCmds(f.what)],
       ["解决什么", stripInstallCmds(f.problem)],
-      ["为什么火", stripInstallCmds(f.why)],
-      ["时间", f.time],
-      // 「上手/安装」字段已按用户要求移除，不再输出到邮件与 PDF
       ["边界", stripInstallCmds(f.boundary)],
       ["状态", stripInstallCmds(f.license)],
     ].filter(([, v]) => v);
