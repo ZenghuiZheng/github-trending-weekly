@@ -1,0 +1,29 @@
+{
+  "_说明": "本地配置文件。复制此文件为 config.json 后填写。切勿提交 config.json 到仓库！",
+
+  "githubToken": "填入你的 GitHub Token（settings/tokens 生成，classic 勾 repo 即可）",
+
+  "deepseekApiKey": "填入你的 DeepSeek API Key（platform.deepseek.com 获取）",
+  "llmBaseUrl": "https://api.deepseek.com",
+  "llmModel": "deepseek-chat",
+  "llmMaxTokens": 8000,
+  "llmTemperature": 0.4,
+
+  "smtpHost": "smtp.qq.com",
+  "smtpPort": 465,
+  "smtpSecure": true,
+  "smtpUser": "your@qq.com",
+  "smtpPass": "授权码（不是QQ密码）",
+  "mailFrom": "your@qq.com",
+  "mailTo": "receiver@example.com",
+
+  "feishuWebhook": "填入飞书机器人 Webhook 地址",
+  "feishuSecret": "（可选）签名密钥，飞书机器人安全设置里开启签名校验才有",
+
+  "wecomWebhook": "填入企业微信机器人 Webhook 地址",
+
+  "weeklyMaxItems": 10,
+  "weeklyMinGain": 500,
+  "monthlyMaxItems": 20,
+  "monthlyMinGain": 0
+}

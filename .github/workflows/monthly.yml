@@ -1,0 +1,162 @@
+name: 月报生成与推送
+
+# 时间表（UTC；北京时间 = UTC+8）
+#   月末最后一日 00:00 北京 = 前一日 16:00 UTC
+#   由于每月天数不同，用 4 个 cron 覆盖 28/29/30/31 号，
+#   并在脚本里判断"是否为当月最后一日"，不是则退出。
+on:
+  schedule:
+    - cron: "0 16 27-31 * *"   # 北京 28~31 号 00:00（实际生效日在步骤内判断）
+    - cron: "0 23 27-31 * *"   # 北京 07:00
+    - cron: "0 1 28-31 * *"    # 北京 09:00
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: "执行阶段"
+        required: false
+        type: choice
+        options: ["", "capture", "write", "deliver"]
+      force:
+        description: "强制运行（忽略月末判断，用于调试）"
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: monthly-report
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 安装 Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: 安装依赖
+        run: npm ci --omit=dev || npm install --omit=dev --no-audit --no-fund
+
+      # 月报只在"月末最后一日"运行，避免 28-31 号每天都跑
+      - name: 判断是否为月末最后一日
+        id: gate
+        run: |
+          FORCE="${{ github.event.inputs.force }}"
+          TOMORROW=$(TZ='Asia/Shanghai' date -d "tomorrow" '+%d')
+          TODAY=$(TZ='Asia/Shanghai' date '+%d')
+          echo "今天: $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M')，明天是 ${TOMORROW} 号"
+
+          if [ "$FORCE" = "true" ]; then
+            echo "run=true" >> $GITHUB_OUTPUT
+            echo "强制运行"
+          elif [ "$TOMORROW" = "01" ]; then
+            echo "run=true" >> $GITHUB_OUTPUT
+            echo "✅ 今天是本月最后一日，继续"
+          else
+            echo "run=false" >> $GITHUB_OUTPUT
+            echo "⏭ 今天不是月末，跳过"
+          fi
+
+      - name: 判断执行阶段
+        if: steps.gate.outputs.run == 'true'
+        id: stage
+        run: |
+          MANUAL="${{ github.event.inputs.stage }}"
+          SCHED="${{ github.event.schedule }}"
+          if [ -n "$MANUAL" ]; then
+            echo "stage=$MANUAL" >> $GITHUB_OUTPUT
+          elif [[ "$SCHED" == 0*16* ]]; then
+            echo "stage=capture" >> $GITHUB_OUTPUT
+          elif [[ "$SCHED" == 0*23* ]]; then
+            echo "stage=write" >> $GITHUB_OUTPUT
+          else
+            echo "stage=deliver" >> $GITHUB_OUTPUT
+          fi
+          echo "北京时间: $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')"
+
+      # ---------- 抓取 ----------
+      - name: 抓取月度榜单
+        if: steps.gate.outputs.run == 'true' && (steps.stage.outputs.stage == 'capture' || steps.stage.outputs.stage == 'all')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          node scripts/fetch.mjs --since=monthly
+          node scripts/enrich.mjs
+          node scripts/readme.mjs
+          # 计算连续霸榜
+          node scripts/streak.mjs --data=$(ls -t data/monthly/*.json | head -1)
+
+      # ---------- 撰写 ----------
+      - name: 调用 LLM 撰写月报
+        if: steps.gate.outputs.run == 'true' && (steps.stage.outputs.stage == 'write' || steps.stage.outputs.stage == 'all')
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          node scripts/write.mjs
+
+      # ---------- 校验 + 推送 ----------
+      - name: 校验并推送月报
+        if: steps.gate.outputs.run == 'true' && (steps.stage.outputs.stage == 'deliver' || steps.stage.outputs.stage == 'all')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_SECURE: ${{ secrets.SMTP_SECURE }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+          FEISHU_SECRET: ${{ secrets.FEISHU_SECRET }}
+          WECOM_WEBHOOK: ${{ secrets.WECOM_WEBHOOK }}
+        run: node scripts/deliver.mjs
+
+      - name: 密钥泄露扫描
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          if grep -rInE 'sk-[A-Za-z0-9_-]{16,}|gh[pousr]_[A-Za-z0-9]{25,}|qyapi\.weixin\.qq\.com/cgi-bin/webhook/send\?key=|open\.feishu\.cn/open-apis/bot/v2/hook/[A-Za-z0-9-]{10,}' \
+              --include='*.md' --include='*.json' --include='*.mjs' --include='*.yml' \
+              --exclude-dir=node_modules --exclude-dir=.git --exclude=config.json . ; then
+            echo "::error::检测到疑似密钥，禁止提交！"
+            exit 1
+          fi
+          echo "✅ 未发现密钥泄露"
+
+      - name: 提交结果
+        if: steps.gate.outputs.run == 'true' && always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add 月总结/ data/ preview/ 2>/dev/null || git add 月总结/ data/
+          if git diff --staged --quiet; then
+            echo "无变更"
+          else
+            git commit -m "月报 $(TZ='Asia/Shanghai' date '+%Y-%m')"
+            git pull --rebase --autostash origin ${GITHUB_REF_NAME} || true
+            git push
+          fi
+
+      - name: 上传产物
+        if: steps.gate.outputs.run == 'true' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: monthly-report-${{ github.run_id }}
+          path: |
+            logs/
+            preview/
+            月总结/
+          retention-days: 60
+          if-no-files-found: ignore

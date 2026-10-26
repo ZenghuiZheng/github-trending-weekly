@@ -1,0 +1,420 @@
+/**
+ * render.mjs — 把 Markdown 报告渲染成三平台版本
+ *
+ * 输出:
+ *   preview/email-{date}.html   邮件 HTML（内联样式，手机友好）
+ *   preview/im-{date}.txt       IM 精简卡片文本
+ *   （MD 版本已由 write.mjs 生成）
+ *
+ * 说明：为降低复杂度与依赖，这里不做 LLM 二次改写，
+ * 而是从已生成的高质量 MD 中结构化提取，保证三端事实完全一致。
+ */
+
+import fs from "node:fs";
+import path from "node:path";
+import { ROOT, log, logErr, readJSON, writeText, ensureDir, lastDayOf } from "./lib/common.mjs";
+
+const args = process.argv.slice(2);
+const dataArg = args.find((a) => a.startsWith("--data="))?.split("=")[1];
+const quiet = args.includes("--quiet");
+
+const dataFile = dataArg ? path.join(ROOT, dataArg) : pickLatest();
+
+function pickLatest() {
+  let best = null, bestT = 0;
+  for (const sub of ["weekly", "monthly"]) {
+    const dir = path.join(ROOT, "data", sub);
+    let names = [];
+    try { names = fs.readdirSync(dir).filter((n) => n.endsWith(".json")); } catch { continue; }
+    for (const n of names) {
+      const p = path.join(dir, n), t = fs.statSync(p).mtimeMs;
+      if (t > bestT) { bestT = t; best = p; }
+    }
+  }
+  return best;
+}
+
+// ---------------- Markdown 解析 ----------------
+/**
+ * 把报告 MD 拆成结构：
+ * { title, meta: [], trendText, sections: [{heading, blocks:[{type,text}]}] }
+ */
+export function parseReport(md) {
+  const lines = md.split(/\r?\n/);
+  const out = { title: "", meta: [], trendText: "", items: [], raw: md };
+
+  let i = 0;
+  // 标题
+  while (i < lines.length && !lines[i].startsWith("# ")) i++;
+  if (i < lines.length) out.title = lines[i].replace(/^#\s*/, "").trim();
+  i++;
+
+  // 引用块（统计窗口等）
+  while (i < lines.length && lines[i].trim() === "") i++;
+  while (i < lines.length && lines[i].startsWith(">")) {
+    out.meta.push(lines[i].replace(/^>\s?/, "").trim());
+    i++;
+  }
+
+  // 逐段解析项目
+  let cur = null;
+  let buf = [];
+  const flushBuf = () => {
+    if (cur && buf.length) {
+      cur.body = buf.join("\n").trim();
+    }
+    buf = [];
+  };
+
+  for (; i < lines.length; i++) {
+    const line = lines[i];
+
+    // "### 1. repo/name"
+    const itemStart = line.match(/^###\s+(\d+)[.、]\s+(.+?)\s*$/);
+    if (itemStart) {
+      flushBuf();
+      if (cur) out.items.push(cur);
+      const namePart = itemStart[2];
+      const repoMatch = namePart.match(/([A-Za-z0-9_.\-]+\/[A-Za-z0-9_.\-]+)/);
+      cur = {
+        index: Number(itemStart[1]),
+        title: namePart,
+        repo: repoMatch ? repoMatch[1] : null,
+        body: "",
+      };
+      continue;
+    }
+
+    if (cur) {
+      buf.push(line);
+    } else {
+      // 还在前言部分（趋势点评等）
+      if (line.startsWith("## ") && !/完整榜单|Top\s*3/i.test(line)) {
+        out.trendHeading = line.replace(/^##\s*/, "");
+      }
+      if (out.trendHeading && line.trim() && !line.startsWith("#") && !line.startsWith(">") && !/^-{3,}$/.test(line.trim())) {
+        out.trendText += line + "\n";
+      }
+    }
+  }
+  flushBuf();
+  if (cur) out.items.push(cur);
+
+  // 从 meta 或正文里提取趋势（周报格式：## 本期趋势）
+  if (!out.trendText) {
+    const tm = md.match(/##\s*(本期趋势|本月趋势)\s*\n+([\s\S]*?)(?=\n##\s|\n###\s|$)/);
+    if (tm) out.trendText = tm[2].trim();
+  }
+
+  return out;
+}
+
+/** 从项目 body 中提取字段（按“**字段名**”分段） */
+function extractFields(item) {
+  const b = item.body || "";
+
+  // 先找出所有字段标题的位置
+  // 已知字段名白名单（只有这些才算字段标题，避免正文里的加粗被误判）
+  const KNOWN = [
+    "它是什么", "是什么", "解决什么问题", "解决什么", "为什么本周火", "为什么火", "为什么突然火",
+    "时间与成熟度", "时间", "快速上手", "如何快速体验", "快速体验", "应用边界", "边界",
+    "许可与状态", "许可",
+  ];
+  const isKnown = (label) => KNOWN.some((k) => label === k || label.startsWith(k));
+
+  const headingRe = /\*\*([^*\n]{2,20})\*\*/g;
+  const marks = [];
+  let m;
+  while ((m = headingRe.exec(b)) !== null) {
+    const label = m[1].trim();
+    if (!isKnown(label)) continue;          // 不在白名单，不算标题
+    marks.push({ label, start: m.index, end: m.index + m[0].length });
+  }
+  // 若没有任何字段标题，整段归入 what
+  if (marks.length === 0) {
+    return { what: b.trim(), problem: "", why: "", time: "", install: "", boundary: "", license: "" };
+  }
+
+  // 将正文按字段标题切段
+  const sections = {};
+  for (let i = 0; i < marks.length; i++) {
+    const cur = marks[i];
+    const nextStart = i + 1 < marks.length ? marks[i + 1].start : b.length;
+    let content = b.slice(cur.end, nextStart).trim();
+    // 去掉末尾的分隔线
+    content = content.replace(/\n*-{3,}\s*$/, "").trim();
+    // 同名只保留第一个
+    if (!(cur.label in sections)) sections[cur.label] = content;
+  }
+
+  // 按别名取字段
+  const pick = (...aliases) => {
+    for (const a of aliases) {
+      for (const [label, val] of Object.entries(sections)) {
+        if (label === a || label.includes(a)) return val;
+      }
+    }
+    return "";
+  };
+
+  return {
+    what: pick("它是什么", "是什么"),
+    problem: pick("解决什么问题", "解决什么"),
+    why: pick("为什么本周火", "为什么火", "为什么突然火"),
+    time: pick("时间与成熟度", "时间"),
+    install: pick("快速上手", "如何快速体验", "快速体验"),
+    boundary: pick("应用边界", "边界"),
+    license: pick("许可与状态", "许可"),
+  };
+}
+
+/** 从项目 title 行提取统计信息 */
+function extractStats(item) {
+  const t = item.title;
+  const gain = (t.match(/\+\s*([\d,]+)/) || [])[1] || null;
+  const total = (t.match(/总星\s*([\d,]+)/) || [])[1] || null;
+  const heat = (t.match(/([\d.]+)\s*%/) || [])[1] || null;
+  const catMatch = (item.body || "").match(/\*\*([\u4e00-\u9fa5A-Za-z]+)\*\*\s*｜/);
+  return { gain, total, heat, category: catMatch ? catMatch[1] : null };
+}
+
+// ---------------- 邮件 HTML ----------------
+function esc(s) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+/** 极简 markdown → html（先处理代码块，再处理行内标记） */
+function mdInline(s) {
+  if (!s) return "";
+  let h = String(s);
+
+  // 1) 先提取代码块（```lang ... ```），占位保留，避免内部被行内规则破坏
+  const blocks = [];
+  h = h.replace(/```([a-zA-Z]*)\n?([\s\S]*?)```/g, (m, lang, code) => {
+    const idx = blocks.length;
+    blocks.push(
+      `<pre style="background:#eef2f7;color:#1e3a5f;border:1px solid #dde5ee;padding:14px 16px;border-radius:8px;overflow-x:auto;font-family:Consolas,Monaco,'Courier New',monospace;font-size:15px;line-height:1.7;margin:10px 0;white-space:pre-wrap;word-break:break-all;">${esc(code.replace(/\n+$/, ""))}</pre>`
+    );
+    return `\u0000CODEBLOCK${idx}\u0000`;
+  });
+
+  // 2) 普通文本转义
+  h = esc(h);
+
+  // 3) 行内代码
+  h = h.replace(/`([^`\n]+)`/g, '<code style="background:#f1f5f9;padding:1px 5px;border-radius:3px;font-family:Consolas,Monaco,monospace;font-size:15px;color:#be185d;">$1</code>');
+  // 4) 加粗
+  h = h.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  // 5) 链接
+  h = h.replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g, '<a href="$2" style="color:#2563eb;text-decoration:none;">$1</a>');
+  h = h.replace(/(?<!\()(https?:\/\/[^\s<)]+)/g, '<a href="$1" style="color:#2563eb;text-decoration:none;word-break:break-all;">$1</a>');
+
+  // 6) 回填代码块
+  h = h.replace(/\u0000CODEBLOCK(\d+)\u0000/g, (m, i) => blocks[Number(i)] || "");
+
+  // 7) 换行（代码块已自带块级格式，避免重复）
+  h = h.replace(/\n/g, "<br>");
+  h = h.replace(/<br>(<pre)/g, "$1").replace(/(<\/pre>)<br>/g, "$1");
+
+  return h;
+}
+
+export function renderEmailHTML(report, data) {
+  const isMonthly = data.since === "monthly";
+  const W = data.window;
+  const dateLabel = isMonthly ? `${W.year}年${W.month}月` : `${W.startISO} ~ ${W.endISO}`;
+  const title = isMonthly ? `GitHub 每月开源热榜 · ${dateLabel}` : `GitHub 每周开源热榜 · ${dateLabel}`;
+
+  const totalGain = data.items.reduce((s, x) => s + x.gain, 0);
+
+  const itemsHTML = report.items.map((item) => {
+    const f = extractFields(item);
+    const st = extractStats(item);
+    const url = item.repo ? `https://github.com/${item.repo}` : "#";
+    const fields = [
+      ["是什么", f.what],
+      ["解决什么", f.problem],
+      ["为什么火", f.why],
+      ["时间", f.time],
+      ["上手", f.install],
+      ["边界", f.boundary],
+      ["状态", f.license],
+    ].filter(([, v]) => v);
+
+    const rows = fields.map(([k, v]) => `
+      <tr>
+        <td style="padding:8px 12px 8px 18px;vertical-align:top;white-space:nowrap;width:70px;color:#64748b;font-size:14px;font-weight:600;">${esc(k)}</td>
+        <td style="padding:8px 20px 8px 0;vertical-align:top;color:#1e293b;font-size:16px;line-height:1.85;text-align:justify;word-break:normal;overflow-wrap:anywhere;">${mdInline(v)}</td>
+      </tr>`).join("");
+
+    return `
+    <div style="margin:0 0 16px 0;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background:#fff;">
+      <div style="background:#f8fafc;padding:14px 20px;border-bottom:1px solid #e2e8f0;">
+        <div style="font-size:17px;font-weight:700;color:#0f172a;">
+          <span style="color:#94a3b8;margin-right:6px;">${item.index}.</span>
+          <a href="${url}" style="color:#0f172a;text-decoration:none;">${esc(item.repo || item.title)}</a>
+        </div>
+        <div style="margin-top:7px;font-size:14px;color:#64748b;">
+          ${st.category ? `<span style="background:#eff6ff;color:#1d4ed8;padding:1px 7px;border-radius:10px;margin-right:8px;">${esc(st.category)}</span>` : ""}
+          ${st.gain ? `<span style="color:#dc2626;font-weight:700;">★ +${esc(st.gain)}</span>&nbsp;本周&nbsp;&nbsp;` : ""}
+          ${st.total ? `总星 ${esc(st.total)}&nbsp;&nbsp;` : ""}
+          ${st.heat ? `相对热度 ${esc(st.heat)}%` : ""}
+        </div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }).join("");
+
+  // 目录
+  const toc = data.items.map((it, i) => {
+    const url = `https://github.com/${it.repo}`;
+    return `<div style="padding:5px 0;font-size:15px;">
+      <a href="${url}" style="color:#2563eb;text-decoration:none;">${i + 1}. ${esc(it.repo)}</a>
+      <span style="color:#dc2626;font-weight:600;"> +${it.gain.toLocaleString()}</span>
+    </div>`;
+  }).join("");
+
+  return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(title)}</title>
+</head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;">
+<div style="max-width:780px;margin:0 auto;padding:24px 18px;">
+
+  <div style="background:linear-gradient(135deg,#1e293b,#334155);border-radius:12px;padding:22px 20px;color:#fff;margin-bottom:18px;">
+    <div style="font-size:22px;font-weight:700;margin-bottom:8px;">${esc(title)}</div>
+    <div style="font-size:14px;color:#cbd5e1;line-height:1.85;">
+      统计窗口：${esc(W.startISO)} 00:00 — ${esc(W.endISO)} 00:00（北京时间）<br>
+      ${isMonthly ? "口径说明：截至上列结束日的过去 30 日，非自然月首尾" : "口径说明：过去 7 天"}<br>
+      数据来源：GitHub Trending（since=${data.since}）｜按期间新增 Star 降序<br>
+      收录 ${data.items.length} 个项目，合计新增 ${totalGain.toLocaleString()} Star
+    </div>
+  </div>
+
+  ${report.trendText ? `
+  <div style="background:#fffbeb;border-left:4px solid #f59e0b;border-radius:6px;padding:14px 16px;margin-bottom:18px;">
+    <div style="font-size:15px;font-weight:700;color:#92400e;margin-bottom:8px;">📈 本期趋势</div>
+    <div style="font-size:16px;color:#451a03;line-height:1.8;">${mdInline(report.trendText)}</div>
+  </div>` : ""}
+
+  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;margin-bottom:18px;">
+    <div style="font-size:15px;font-weight:700;color:#334155;margin-bottom:10px;">📋 本期目录</div>
+    ${toc}
+  </div>
+
+  ${itemsHTML}
+
+  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;font-size:14px;color:#64748b;line-height:1.9;">
+    <div style="font-weight:700;color:#334155;margin-bottom:6px;">说明</div>
+    · 本报告由脚本自动抓取 GitHub Trending 并生成，数据为生成时刻快照<br>
+    · 「相对热度」= 本期新增 Star ÷ 当前总 Star，数值越高说明越依赖近期爆发<br>
+    · 「慎用」表示仓库归档、长期停更或 issue 积压严重，选用前请自行评估<br>
+    · 完整版见邮件附件 PDF
+  </div>
+
+  <div style="text-align:center;font-size:13px;color:#94a3b8;padding:20px 0;">
+    生成于 ${new Date(Date.now() + 8 * 3600 * 1000).toISOString().replace("T", " ").slice(0, 16)}（北京时间）
+  </div>
+</div>
+</body>
+</html>`;
+}
+
+// ---------------- IM 精简卡片 ----------------
+export function renderIMText(report, data) {
+  const isMonthly = data.since === "monthly";
+  const W = data.window;
+  const dateLabel = isMonthly ? `${W.year}年${W.month}月` : `${W.startISO}~${W.endISO}`;
+
+  const trend = (report.trendText || "").replace(/\*\*/g, "").replace(/\n+/g, " ").trim();
+  const trendShort = trend.length > 120 ? trend.slice(0, 118) + "…" : trend;
+
+  const lines = [];
+  lines.push(`📊 **GitHub ${isMonthly ? "月" : "周"}榜 · ${dateLabel}**`);
+  lines.push("");
+  if (trendShort) {
+    lines.push(`🔥 趋势：${trendShort}`);
+    lines.push("");
+  }
+
+  data.items.forEach((it, i) => {
+    // 优先用序号匹配（报告里项目顺序与数据一致），再退化为仓库名匹配
+    const item = report.items.find((x) => x.repo === it.repo) || report.items[i];
+    let what = "";
+    if (item) {
+      const f = extractFields(item);
+      what = (f.what || "").replace(/\*\*/g, "").replace(/\n+/g, " ").trim();
+    }
+    if (!what) what = (it.desc || "").replace(/\s+/g, " ").slice(0, 60);
+    if (what.length > 70) what = what.slice(0, 68) + "…";
+    lines.push(`**${i + 1}. [${it.repo}](https://github.com/${it.repo})**  +${it.gain.toLocaleString()}`);
+    lines.push(`${what}`);
+    lines.push("");
+  });
+
+  lines.push(`—— 共 ${data.items.length} 个项目 · 完整报告见邮件 / 本地 md`);
+  return lines.join("\n");
+}
+
+// ---------------- 主流程 ----------------
+function main() {
+  if (!dataFile) throw new Error("未找到数据文件");
+  const data = readJSON(dataFile);
+  const mdPath = path.join(ROOT, data.reportPath || "");
+  if (!data.reportPath || !fs.existsSync(mdPath)) {
+    throw new Error(`找不到报告 md: ${data.reportPath}，请先运行 write.mjs`);
+  }
+
+  const md = fs.readFileSync(mdPath, "utf8");
+  const report = parseReport(md);
+
+  if (report.items.length === 0) {
+    logErr(`解析出 0 个项目（报告格式可能不符合约定）。items 应为 "### 1. owner/repo" 形式`);
+  } else {
+    log(`解析到 ${report.items.length} 个项目章节`);
+  }
+
+  // 文件名与本地 md 完全一致，只是扩展名不同
+  // 周报: Github每周开源热榜—2026-10-19至2026-10-25.{md|html|pdf|txt}
+  // 月报: Github每月开源热榜—2026年10月.{md|html|pdf|txt}
+  const W = data.window;
+  const baseName = data.since === "monthly"
+    ? `Github每月开源热榜—${W.year}年${W.month}月`
+    : `Github每周开源热榜—${W.startISO}至${lastDayOf(W.endISO)}`;
+
+  const previewDir = ensureDir(path.join(ROOT, "preview"));
+  const htmlPath = path.join(previewDir, `${baseName}.html`);
+  const imPath = path.join(previewDir, `${baseName}.txt`);
+
+  // 供 deliver.mjs 使用
+  data._baseName = baseName;
+
+  writeText(htmlPath, renderEmailHTML(report, data));
+  writeText(imPath, renderIMText(report, data));
+
+  if (!quiet) {
+    log(`✅ 邮件 HTML: ${path.relative(ROOT, htmlPath)}`);
+    log(`✅ IM 卡片: ${path.relative(ROOT, imPath)}`);
+  }
+
+  return { htmlPath, imPath, report, data };
+}
+
+if (process.argv[1] && process.argv[1].endsWith("render.mjs")) {
+  try {
+    main();
+  } catch (e) {
+    logErr(e.message);
+    process.exit(1);
+  }
+}
+
+export { main as renderAll };

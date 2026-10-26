@@ -1,0 +1,26 @@
+# 依赖
+node_modules/
+
+# 本地配置（含密钥，绝不入库）
+config.json
+.env
+.env.*
+!.env.example
+
+# 临时文件
+*.tmp
+._*
+.DS_Store
+Thumbs.db
+
+# 日志与预览产物：本地不入库，Actions 会通过 artifact 留档
+logs/*
+!logs/.gitkeep
+preview/*
+!preview/.gitkeep
+
+# 原始 HTML 快照（600KB+/周，体积大；需要时从 Actions artifact 取）
+snapshots/*
+
+# PDF 体积大，不入库（由邮件附件送达）
+*.pdf

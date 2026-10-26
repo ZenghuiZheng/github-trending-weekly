@@ -1,0 +1,151 @@
+name: 周报生成与推送
+
+# 时间表（UTC；北京时间 = UTC+8）
+#   抓取  周日 16:00 UTC = 周一 00:00 北京
+#   撰写  周日 23:00 UTC = 周一 07:00 北京
+#   推送  周一 01:00 UTC = 周一 09:00 北京
+on:
+  schedule:
+    - cron: "0 16 * * 0"
+    - cron: "0 23 * * 0"
+    - cron: "0 1 * * 1"
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: "执行阶段（留空则按当前时间自动判断）"
+        required: false
+        type: choice
+        options: ["", "capture", "write", "deliver"]
+      skip_im:
+        description: "跳过 IM 推送"
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: weekly-report
+  cancel-in-progress: false
+
+permissions:
+  contents: write   # 需要提交 md / data 回仓库
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 安装 Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: 安装依赖
+        run: npm ci --omit=dev || npm install --omit=dev --no-audit --no-fund
+
+      - name: 判断执行阶段
+        id: stage
+        run: |
+          MANUAL="${{ github.event.inputs.stage }}"
+          if [ -n "$MANUAL" ]; then
+            echo "stage=$MANUAL" >> $GITHUB_OUTPUT
+            echo "手动指定阶段: $MANUAL"
+          elif [ "${{ github.event.schedule }}" = "0 16 * * 0" ]; then
+            echo "stage=capture" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.schedule }}" = "0 23 * * 0" ]; then
+            echo "stage=write" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.schedule }}" = "0 1 * * 1" ]; then
+            echo "stage=deliver" >> $GITHUB_OUTPUT
+          else
+            echo "stage=all" >> $GITHUB_OUTPUT
+          fi
+          echo "北京时间: $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')"
+
+      # ---------- 阶段 1：抓取 ----------
+      - name: 抓取榜单并补全数据
+        if: steps.stage.outputs.stage == 'capture' || steps.stage.outputs.stage == 'all'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          node scripts/fetch.mjs --since=weekly
+          node scripts/enrich.mjs
+          node scripts/readme.mjs
+
+      # ---------- 阶段 2：撰写 ----------
+      - name: 调用 LLM 撰写报告
+        if: steps.stage.outputs.stage == 'write' || steps.stage.outputs.stage == 'all'
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          node scripts/write.mjs
+
+      # ---------- 阶段 3：校验 + 推送 ----------
+      - name: 校验并推送报告
+        if: steps.stage.outputs.stage == 'deliver' || steps.stage.outputs.stage == 'all'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_SECURE: ${{ secrets.SMTP_SECURE }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+          FEISHU_SECRET: ${{ secrets.FEISHU_SECRET }}
+          WECOM_WEBHOOK: ${{ secrets.WECOM_WEBHOOK }}
+        run: |
+          FLAGS=""
+          if [ "${{ github.event.inputs.skip_im }}" = "true" ]; then FLAGS="--no-im"; fi
+          node scripts/deliver.mjs $FLAGS
+
+      # ---------- 安全：提交前扫描密钥 ----------
+      - name: 密钥泄露扫描
+        run: |
+          echo "扫描仓库中的疑似密钥..."
+          HIT=0
+          if grep -rInE 'sk-[A-Za-z0-9_-]{16,}|gh[pousr]_[A-Za-z0-9]{25,}|qyapi\.weixin\.qq\.com/cgi-bin/webhook/send\?key=|open\.feishu\.cn/open-apis/bot/v2/hook/[A-Za-z0-9-]{10,}' \
+              --include='*.md' --include='*.json' --include='*.mjs' --include='*.yml' --include='*.txt' \
+              --exclude-dir=node_modules --exclude-dir=.git --exclude=config.json . ; then
+            echo "::error::检测到疑似密钥，禁止提交！"
+            HIT=1
+          fi
+          if [ $HIT -ne 0 ]; then exit 1; fi
+          echo "✅ 未发现密钥泄露"
+
+      # ---------- 提交结果 ----------
+      - name: 提交报告与数据
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add 周总结/ 月总结/ data/ preview/ 2>/dev/null || git add 周总结/ data/
+          if git diff --staged --quiet; then
+            echo "无变更，跳过提交"
+          else
+            MSG="周报 $(TZ='Asia/Shanghai' date '+%Y-%m-%d')"
+            git commit -m "$MSG"
+            git pull --rebase --autostash origin ${GITHUB_REF_NAME} || true
+            git push
+            echo "✅ 已提交"
+          fi
+
+      - name: 上传产物（便于排查）
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-report-${{ github.run_id }}
+          path: |
+            logs/
+            preview/
+            周总结/
+          retention-days: 30
+          if-no-files-found: ignore

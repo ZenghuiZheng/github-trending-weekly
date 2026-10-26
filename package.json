@@ -1,0 +1,19 @@
+{
+  "name": "github-trending-report",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "GitHub 每周/每月开源热榜自动生成与推送",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "nodemailer": "^6.9.14"
+  },
+  "scripts": {
+    "capture": "node scripts/fetch.mjs && node scripts/enrich.mjs && node scripts/readme.mjs",
+    "write": "node scripts/write.mjs",
+    "verify": "node scripts/verify.mjs",
+    "deliver": "node scripts/deliver.mjs"
+  }
+}
