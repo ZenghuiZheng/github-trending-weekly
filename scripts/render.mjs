@@ -263,7 +263,7 @@ function mdInline(s) {
   return h;
 }
 
-export function renderEmailHTML(report, data) {
+export function renderEmailHTML(report, data, { variant = "email" } = {}) {
   const isMonthly = data.since === "monthly";
   const W = data.window;
   const dateLabel = isMonthly ? `${W.year}年${W.month}月` : `${W.startISO} ~ ${W.endISO}`;
@@ -286,13 +286,25 @@ export function renderEmailHTML(report, data) {
         .trim();
     };
 
-    // 邮件与 PDF 只输出四项：是什么 / 解决什么 / 边界 / 状态
-    const fields = [
-      ["是什么", stripInstallCmds(f.what)],
-      ["解决什么", stripInstallCmds(f.problem)],
-      ["边界", stripInstallCmds(f.boundary)],
-      ["状态", stripInstallCmds(f.license)],
-    ].filter(([, v]) => v);
+    // 邮件（email）四项：是什么 / 解决什么 / 边界 / 状态
+    // PDF（pdf）四项 + 为什么火 + 时间，共六项，保持完整
+    const isPdf = variant === "pdf";
+    const fields = (isPdf
+      ? [
+          ["是什么", stripInstallCmds(f.what)],
+          ["解决什么", stripInstallCmds(f.problem)],
+          ["为什么火", stripInstallCmds(f.why)],
+          ["时间", f.time],
+          ["边界", stripInstallCmds(f.boundary)],
+          ["状态", stripInstallCmds(f.license)],
+        ]
+      : [
+          ["是什么", stripInstallCmds(f.what)],
+          ["解决什么", stripInstallCmds(f.problem)],
+          ["边界", stripInstallCmds(f.boundary)],
+          ["状态", stripInstallCmds(f.license)],
+        ]
+    ).filter(([, v]) => v);
 
     const rows = fields.map(([k, v]) => `
       <tr>
@@ -442,17 +454,21 @@ function main() {
     : `Github每周开源热榜—${W.startISO}至${lastDayOf(W.endISO)}`;
 
   const previewDir = ensureDir(path.join(ROOT, "preview"));
-  const htmlPath = path.join(previewDir, `${baseName}.html`);
+  const htmlPath = path.join(previewDir, `${baseName}.html`);          // 邮件正文（四项）
+  const pdfHtmlPath = path.join(previewDir, `.pdf-${baseName}.html`);  // PDF 专用（六项，临时）
   const imPath = path.join(previewDir, `${baseName}.txt`);
 
   // 供 deliver.mjs 使用
   data._baseName = baseName;
+  data._pdfHtmlName = `.pdf-${baseName}.html`;
 
-  writeText(htmlPath, renderEmailHTML(report, data));
+  writeText(htmlPath, renderEmailHTML(report, data, { variant: "email" }));
+  writeText(pdfHtmlPath, renderEmailHTML(report, data, { variant: "pdf" }));
   writeText(imPath, renderIMText(report, data));
 
   if (!quiet) {
-    log(`✅ 邮件 HTML: ${path.relative(ROOT, htmlPath)}`);
+    log(`✅ 邮件 HTML（四项）: ${path.relative(ROOT, htmlPath)}`);
+    log(`✅ PDF HTML（六项）: ${path.relative(ROOT, pdfHtmlPath)}`);
     log(`✅ IM 卡片: ${path.relative(ROOT, imPath)}`);
   }
 

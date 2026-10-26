@@ -77,10 +77,22 @@ async function main() {
   const { htmlPath, report } = renderAll();
   log(`  邮件 HTML: ${path.relative(ROOT, htmlPath)}`);
 
-  // ---------- 步骤3：PDF ----------
-  log("[3/5] 生成 PDF 附件...");
+  // ---------- 步骤3：PDF（用六项完整版 HTML，与邮件四项正文分开） ----------
+  log("[3/5] 生成 PDF 附件（完整六项）...");
+  const fsMod = await import("node:fs");
+  const pathMod = await import("node:path");
+  // 按命名规则推算 PDF 专用 HTML（不依赖内存里的 data 字段）
+  const htmlBase = pathMod.basename(htmlPath);
+  const pdfHtmlPath = pathMod.join(pathMod.dirname(htmlPath), `.pdf-${htmlBase}`);
   const pdfPath = htmlPath.replace(/\.html$/, ".pdf");
-  const pdf = await htmlToPDF(htmlPath, pdfPath);
+
+  const srcHtml = fsMod.existsSync(pdfHtmlPath) ? pdfHtmlPath : htmlPath;
+  if (!fsMod.existsSync(pdfHtmlPath)) {
+    logErr("  未找到 PDF 专用 HTML，回退使用邮件 HTML（将缺少「为什么火」「时间」）");
+  }
+  const pdf = await htmlToPDF(srcHtml, pdfPath);
+  // 清理临时 HTML
+  try { if (fsMod.existsSync(pdfHtmlPath) && pdfHtmlPath !== htmlPath) fsMod.unlinkSync(pdfHtmlPath); } catch {}
   if (!pdf) logErr("  PDF 生成失败，邮件将不含附件（正文内容完整）");
 
   // ---------- 步骤4：邮件 ----------
