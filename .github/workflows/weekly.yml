@@ -49,6 +49,15 @@ jobs:
       - name: 安装依赖
         run: npm ci --omit=dev || npm install --omit=dev --no-audit --no-fund
 
+      # ★ PDF 需要中文字体，Ubuntu runner 默认不含，缺了会全部渲染成方块
+      - name: 安装中文字体
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-noto-cjk fonts-noto-cjk-extra fontconfig
+          fc-cache -f
+          echo "已安装中文字体："
+          fc-list :lang=zh | head -5
+
       - name: 判断执行阶段
         id: stage
         run: |

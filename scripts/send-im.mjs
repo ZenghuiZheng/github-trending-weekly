@@ -13,6 +13,7 @@
 import crypto from "node:crypto";
 import { log, logErr, retry } from "./lib/common.mjs";
 import { loadConfig } from "./lib/config.mjs";
+import { buildDigest } from "./render.mjs";
 
 // ---------------- 飞书 ----------------
 /**
@@ -63,24 +64,39 @@ export async function sendFeishu(webhook, secret, card) {
 /**
  * 构造飞书卡片：标题 + 趋势 + 项目列表
  */
-export function buildFeishuCard(data, trendText) {
+export function buildFeishuCard(data, trendText, report = null) {
   const isMonthly = data.since === "monthly";
   const W = data.window;
-  const dateLabel = isMonthly ? `${W.year}年${W.month}月` : `${W.startISO} ~ ${W.endISO}`;
+  const dateOf = (iso) => {
+    const d = new Date(iso + "T00:00:00Z");
+    d.setUTCDate(d.getUTCDate() - 1);
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+  };
+  const dateLabel = isMonthly ? `${W.year}年${W.month}月` : `${W.startISO} ~ ${dateOf(W.endISO)}`;
   const totalGain = data.items.reduce((s, x) => s + x.gain, 0);
 
   const trend = (trendText || "").replace(/\*\*/g, "").replace(/\n+/g, " ").trim();
-  const trendShort = trend.length > 200 ? trend.slice(0, 198) + "…" : trend;
+  const trendShort = trend.length > 260 ? trend.slice(0, 258) + "…" : trend;
 
-  // 项目列表：每条 2 行
+  const digest = report ? buildDigest(report, data) : [];
+  const esc = (t) => String(t || "").replace(/[<>]/g, "");
+
   const listElements = [];
   data.items.forEach((it, i) => {
-    const short = (it.desc || "").replace(/\s+/g, " ").slice(0, 78);
+    const d = digest[i];
+    const what = d ? esc(d.what) : "（报告未给出介绍）";
+    const problem = d ? esc(d.problem) : "（报告未给出说明）";
+    const status = d ? esc(d.status) : "（未获取）";
+
     listElements.push({
       tag: "div",
       text: {
         tag: "lark_md",
-        content: `**${i + 1}. [${it.repo}](https://github.com/${it.repo})**  <font color='red'>+${it.gain.toLocaleString()}</font>\n<font color='grey'>${short}</font>`,
+        content:
+          `**${i + 1}. [${it.repo}](https://github.com/${it.repo})**　<font color='red'>★ +${it.gain.toLocaleString()}</font>\n` +
+          `<font color='grey'>介绍：</font>${what}\n` +
+          `<font color='grey'>解决：</font>${problem}\n` +
+          `<font color='grey'>状态：</font>${status}`,
       },
     });
     if (i < data.items.length - 1) listElements.push({ tag: "hr" });
@@ -92,7 +108,7 @@ export function buildFeishuCard(data, trendText) {
       template: "blue",
       title: {
         tag: "plain_text",
-        content: `📊 GitHub ${isMonthly ? "月" : "周"}榜 · ${dateLabel}`,
+        content: `📊 GitHub ${isMonthly ? "月" : "周"}度开源热榜 · ${dateLabel}`,
       },
     },
     elements: [
@@ -100,9 +116,10 @@ export function buildFeishuCard(data, trendText) {
         tag: "div",
         text: {
           tag: "lark_md",
-          content: `**统计窗口**：${W.startISO} 00:00 — ${W.endISO} 00:00（北京时间）\n` +
-                   `**收录**：${data.items.length} 个项目 · 合计新增 **${totalGain.toLocaleString()}** Star\n` +
-                   `**数据源**：GitHub Trending (since=${data.since})`,
+          content:
+            `**统计区间**：${W.startISO} 00:00 — ${W.endISO} 00:00（北京时间）\n` +
+            `**本期收录**：${data.items.length} 个项目，合计新增 **${totalGain.toLocaleString()}** Star\n` +
+            `**排序依据**：按本期新增 Star 降序`,
         },
       },
       ...(trendShort ? [
@@ -115,7 +132,7 @@ export function buildFeishuCard(data, trendText) {
       {
         tag: "note",
         elements: [
-          { tag: "plain_text", content: `完整报告（含应用边界、维护状态）见邮件附件 PDF · ${new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 16).replace("T", " ")} 生成` },
+          { tag: "plain_text", content: `完整报告（含上手方式、应用边界、许可）见邮件附件 PDF` },
         ],
       },
     ],
@@ -124,52 +141,64 @@ export function buildFeishuCard(data, trendText) {
 
 // ---------------- 企业微信 ----------------
 /** 企业微信 markdown 单条上限 4096 字节，需分条发送 */
-export function buildWecomMarkdown(data, trendText) {
+export function buildWecomMarkdown(data, trendText, report = null) {
   const isMonthly = data.since === "monthly";
   const W = data.window;
-  const dateLabel = isMonthly ? `${W.year}年${W.month}月` : `${W.startISO} ~ ${W.endISO}`;
+  const dateOf = (iso) => {
+    const d = new Date(iso + "T00:00:00Z");
+    d.setUTCDate(d.getUTCDate() - 1);
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+  };
+  const dateLabel = isMonthly ? `${W.year}年${W.month}月` : `${W.startISO} ~ ${dateOf(W.endISO)}`;
   const totalGain = data.items.reduce((s, x) => s + x.gain, 0);
 
   const trend = (trendText || "").replace(/\*\*/g, "").replace(/\n+/g, " ").trim();
-  const trendShort = trend.length > 150 ? trend.slice(0, 148) + "…" : trend;
+  const trendShort = trend.length > 180 ? trend.slice(0, 178) + "…" : trend;
+
+  const digest = report ? buildDigest(report, data) : [];
 
   const head = [
-    `## 📊 GitHub ${isMonthly ? "月" : "周"}榜 · ${dateLabel}`,
-    `> 统计窗口：${W.startISO} 00:00 — ${W.endISO} 00:00（北京时间）`,
-    `> 收录 **${data.items.length}** 个项目 · 合计新增 **${totalGain.toLocaleString()}** Star`,
+    `## 📊 GitHub ${isMonthly ? "月" : "周"}度开源热榜 · ${dateLabel}`,
+    `**统计区间**：${W.startISO} 00:00 — ${W.endISO} 00:00（北京时间）`,
+    `**本期收录**：${data.items.length} 个项目，合计新增 **${totalGain.toLocaleString()}** Star`,
   ];
   if (trendShort) {
     head.push("");
     head.push(`🔥 **本期趋势**`);
     head.push(trendShort);
   }
-  head.push("");
 
-  const itemLines = data.items.map((it, i) => {
-    const short = (it.desc || "").replace(/\s+/g, " ").slice(0, 60);
-    return `**${i + 1}. [${it.repo}](${it.url})** <font color="warning">+${it.gain.toLocaleString()}</font>\n${short}`;
+  const itemBlocks = data.items.map((it, i) => {
+    const d = digest[i];
+    return [
+      `**${i + 1}. [${it.repo}](${it.url})** <font color="warning">★ +${it.gain.toLocaleString()}</font>`,
+      `> 介绍：${d ? d.what : "（报告未给出介绍）"}`,
+      `> 解决：${d ? d.problem : "（报告未给出说明）"}`,
+      `> 状态：${d ? d.status : "（未获取）"}`,
+    ].join("\n");
   });
 
-  const tail = ["", `完整报告见邮件附件 PDF`];
+  const tail = `完整报告（含上手方式、应用边界、许可）见邮件附件 PDF`;
 
-  // 组装并保证单条不超 4096 字节
+  // 企业微信 markdown 单条上限 4096 字节，按块分条
   const HEAD = head.join("\n");
   const chunks = [];
   let cur = HEAD;
-  for (const line of itemLines) {
-    const candidate = cur + "\n\n" + line;
-    if (Buffer.byteLength(candidate, "utf8") > 3800) {
+  for (const blk of itemBlocks) {
+    const candidate = cur + "\n\n" + blk;
+    if (Buffer.byteLength(candidate, "utf8") > 3600) {
       chunks.push(cur);
-      cur = line;
+      cur = blk;
     } else {
       cur = candidate;
     }
   }
-  chunks.push(cur);
-  // 最后一段追加尾部说明
-  const lastIdx = chunks.length - 1;
-  if (Buffer.byteLength(chunks[lastIdx] + tail.join("\n"), "utf8") < 3900) {
-    chunks[lastIdx] += tail.join("\n");
+  const last = cur + "\n\n" + tail;
+  if (Buffer.byteLength(last, "utf8") > 4000) {
+    chunks.push(cur);
+    chunks.push(tail);
+  } else {
+    chunks.push(last);
   }
 
   return chunks;
@@ -251,7 +280,7 @@ export async function sendWecomFile(webhook, pdfPath, { maxMB = 20 } = {}) {
  * 推送到所有已配置的 IM 渠道
  * 某个渠道失败不影响其他渠道，但全部失败会抛错
  */
-export async function pushToIM({ data, trendText, pdfPath = null }) {
+export async function pushToIM({ data, trendText, pdfPath = null, report = null }) {
   const cfg = loadConfig();
   const results = [];
   let attempted = 0;
@@ -260,7 +289,7 @@ export async function pushToIM({ data, trendText, pdfPath = null }) {
   if (cfg.feishu.webhook) {
     attempted++;
     try {
-      const card = buildFeishuCard(data, trendText);
+      const card = buildFeishuCard(data, trendText, report);
       await retry(() => sendFeishu(cfg.feishu.webhook, cfg.feishu.secret, card), {
         times: 3, delayMs: 2000, label: "飞书推送",
       });
@@ -278,7 +307,7 @@ export async function pushToIM({ data, trendText, pdfPath = null }) {
   if (cfg.wecom.webhook) {
     attempted++;
     try {
-      const chunks = buildWecomMarkdown(data, trendText);
+      const chunks = buildWecomMarkdown(data, trendText, report);
       for (let i = 0; i < chunks.length; i++) {
         await retry(() => sendWecom(cfg.wecom.webhook, chunks[i]), {
           times: 3, delayMs: 3000, label: `企业微信推送[${i + 1}/${chunks.length}]`,

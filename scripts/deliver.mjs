@@ -120,7 +120,7 @@ async function main() {
     if (dryRun) {
       log("  --dry-run：跳过 IM 推送");
     } else {
-      const r = await pushToIM({ data, trendText: report.trendText, pdfPath: pdf });
+      const r = await pushToIM({ data, trendText: report.trendText, pdfPath: pdf, report });
       if (r.skipped) {
         log("  未配置任何 IM 渠道");
       } else if (r.allFailed) {

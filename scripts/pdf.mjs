@@ -48,6 +48,21 @@ export async function htmlToPDF(htmlPath, pdfPath, { timeoutMs = 90000 } = {}) {
     return null;
   }
 
+  // 中文环境自检：无中文字体时 PDF 会全部渲染成方块
+  if (process.platform === "linux") {
+    try {
+      const { execSync } = await import("node:child_process");
+      const zh = execSync("fc-list :lang=zh 2>/dev/null | wc -l", { encoding: "utf8" }).trim();
+      if (Number(zh) < 1) {
+        logErr("⚠️  未检测到中文字体！PDF 中的中文会显示为方块。请安装：sudo apt-get install -y fonts-noto-cjk");
+      } else {
+        log(`  中文字体检查通过（共 ${zh} 个）`);
+      }
+    } catch {
+      /* 忽略检测失败 */
+    }
+  }
+
   ensureDir(path.dirname(pdfPath));
   // Windows 路径需要绝对路径 + 反斜杠
   const absHtml = path.resolve(htmlPath);

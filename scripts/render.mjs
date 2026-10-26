@@ -168,6 +168,47 @@ function extractFields(item) {
   };
 }
 
+
+/**
+ * 提取"精简卡片"所需的四个字段，全部来自报告的中文正文。
+ * 用户要求：推送内容 = 项目名 + 涨星 + 项目介绍 + 解决什么问题 + 状态
+ * 拿不到中文时明确提示，绝不回退到英文 desc。
+ */
+export function buildDigest(report, data) {
+  return data.items.map((it, i) => {
+    const item = report.items.find((x) => x.repo === it.repo) || report.items[i];
+    const f = item ? extractFields(item) : {};
+
+    const clean = (t) => (t || "")
+      .replace(/\*\*/g, "")
+      .replace(/`/g, "")
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")   // markdown 链接转纯文本
+      .replace(/\n+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    const what = clean(f.what);
+    const problem = clean(f.problem);
+    // 状态：优先用结构化数据，中文表述
+    let status = "";
+    if (it.archived) status = "⚠️ 慎用（仓库已归档）";
+    else if (it.maintenance === "慎用") status = `⚠️ 慎用（${it.maintenanceNote || "维护状态不佳"}）`;
+    else if (it.maintenance === "未知") status = "维护状态未知";
+    else status = `✅ ${it.maintenance}${it.maintenanceNote ? "（" + it.maintenanceNote + "）" : ""}`;
+
+    return {
+      index: i + 1,
+      repo: it.repo,
+      url: it.url,
+      gain: it.gain,
+      gainText: it.gain.toLocaleString(),
+      what: what || "（报告未给出介绍）",
+      problem: problem || "（报告未给出说明）",
+      status,
+    };
+  });
+}
+
 /** 从项目 title 行提取统计信息 */
 function extractStats(item) {
   const t = item.title;
@@ -196,7 +237,7 @@ function mdInline(s) {
   h = h.replace(/```([a-zA-Z]*)\n?([\s\S]*?)```/g, (m, lang, code) => {
     const idx = blocks.length;
     blocks.push(
-      `<pre style="background:#eef2f7;color:#1e3a5f;border:1px solid #dde5ee;padding:14px 16px;border-radius:8px;overflow-x:auto;font-family:Consolas,Monaco,'Courier New',monospace;font-size:15px;line-height:1.7;margin:10px 0;white-space:pre-wrap;word-break:break-all;">${esc(code.replace(/\n+$/, ""))}</pre>`
+      `<pre style="background:#eef2f7;color:#1e3a5f;border:1px solid #dde5ee;padding:14px 16px;border-radius:8px;overflow-x:auto;font-family:Consolas,Monaco,'Courier New','DejaVu Sans Mono','Noto Sans Mono CJK SC',monospace;font-size:15px;line-height:1.7;margin:10px 0;white-space:pre-wrap;word-break:break-all;">${esc(code.replace(/\n+$/, ""))}</pre>`
     );
     return `\u0000CODEBLOCK${idx}\u0000`;
   });
@@ -205,7 +246,7 @@ function mdInline(s) {
   h = esc(h);
 
   // 3) 行内代码
-  h = h.replace(/`([^`\n]+)`/g, '<code style="background:#f1f5f9;padding:1px 5px;border-radius:3px;font-family:Consolas,Monaco,monospace;font-size:15px;color:#be185d;">$1</code>');
+  h = h.replace(/`([^`\n]+)`/g, '<code style="background:#f1f5f9;padding:1px 5px;border-radius:3px;font-family:Consolas,Monaco,DejaVu Sans Mono,Noto Sans Mono CJK SC,monospace;font-size:15px;color:#be185d;">$1</code>');
   // 4) 加粗
   h = h.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
   // 5) 链接
@@ -286,7 +327,7 @@ export function renderEmailHTML(report, data) {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title>
 </head>
-<body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;">
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans CJK SC','Source Han Sans SC','WenQuanYi Micro Hei',sans-serif;">
 <div style="max-width:780px;margin:0 auto;padding:24px 18px;">
 
   <div style="background:linear-gradient(135deg,#1e293b,#334155);border-radius:12px;padding:22px 20px;color:#fff;margin-bottom:18px;">
@@ -332,35 +373,36 @@ export function renderEmailHTML(report, data) {
 export function renderIMText(report, data) {
   const isMonthly = data.since === "monthly";
   const W = data.window;
-  const dateLabel = isMonthly ? `${W.year}年${W.month}月` : `${W.startISO}~${W.endISO}`;
+  const dateOf = (iso) => {
+    const d = new Date(iso + "T00:00:00Z");
+    d.setUTCDate(d.getUTCDate() - 1);
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+  };
+  const dateLabel = isMonthly ? `${W.year}年${W.month}月` : `${W.startISO}~${dateOf(W.endISO)}`;
 
   const trend = (report.trendText || "").replace(/\*\*/g, "").replace(/\n+/g, " ").trim();
-  const trendShort = trend.length > 120 ? trend.slice(0, 118) + "…" : trend;
+  const trendShort = trend.length > 150 ? trend.slice(0, 148) + "…" : trend;
 
   const lines = [];
-  lines.push(`📊 **GitHub ${isMonthly ? "月" : "周"}榜 · ${dateLabel}**`);
+  lines.push(`📊 **GitHub ${isMonthly ? "月" : "周"}度开源热榜 · ${dateLabel}**`);
+  lines.push(`共 ${data.items.length} 个项目 ｜ 按本期新增 Star 排序`);
   lines.push("");
   if (trendShort) {
-    lines.push(`🔥 趋势：${trendShort}`);
+    lines.push(`🔥 **本期趋势**`);
+    lines.push(trendShort);
     lines.push("");
   }
+  lines.push("————————————————".slice(0, 0));
 
-  data.items.forEach((it, i) => {
-    // 优先用序号匹配（报告里项目顺序与数据一致），再退化为仓库名匹配
-    const item = report.items.find((x) => x.repo === it.repo) || report.items[i];
-    let what = "";
-    if (item) {
-      const f = extractFields(item);
-      what = (f.what || "").replace(/\*\*/g, "").replace(/\n+/g, " ").trim();
-    }
-    if (!what) what = (it.desc || "").replace(/\s+/g, " ").slice(0, 60);
-    if (what.length > 70) what = what.slice(0, 68) + "…";
-    lines.push(`**${i + 1}. [${it.repo}](https://github.com/${it.repo})**  +${it.gain.toLocaleString()}`);
-    lines.push(`${what}`);
+  buildDigest(report, data).forEach((d) => {
+    lines.push(`**${d.index}. [${d.repo}](${d.url})**　★ +${d.gainText}`);
+    lines.push(`　▸ 介绍：${d.what}`);
+    lines.push(`　▸ 解决：${d.problem}`);
+    lines.push(`　▸ 状态：${d.status}`);
     lines.push("");
   });
 
-  lines.push(`—— 共 ${data.items.length} 个项目 · 完整报告见邮件 / 本地 md`);
+  lines.push(`—— 完整报告（含上手方式、应用边界）见邮件附件 PDF`);
   return lines.join("\n");
 }
 
