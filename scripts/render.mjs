@@ -228,9 +228,18 @@ function esc(s) {
 }
 
 /** 极简 markdown → html（先处理代码块，再处理行内标记） */
+/** 修复 LLM 输出里畸形的 markdown（如 `*发布主体**：` 少一个星号） */
+function fixMarkdown(s) {
+  let t = String(s ?? "");
+  t = t.replace(/(^|[^\*])\*([^*\n]{1,30})\*\*/g, "$1**$2**");
+  t = t.replace(/\*\*([^*\n]{1,30})\*(?!\*)/g, "**$1**");
+  t = t.replace(/\*{3,}/g, "**");
+  return t;
+}
+
 function mdInline(s) {
   if (!s) return "";
-  let h = String(s);
+  let h = fixMarkdown(s);
 
   // 1) 先提取代码块（```lang ... ```），占位保留，避免内部被行内规则破坏
   const blocks = [];
@@ -306,29 +315,29 @@ export function renderEmailHTML(report, data, { variant = "email" } = {}) {
         ]
     ).filter(([, v]) => v);
 
-    const rows = fields.map(([k, v]) => `
-      <tr>
-        <td style="padding:8px 12px 8px 18px;vertical-align:top;white-space:nowrap;width:70px;color:#64748b;font-size:14px;font-weight:600;">${esc(k)}</td>
-        <td style="padding:8px 20px 8px 0;vertical-align:top;color:#1e293b;font-size:16px;line-height:1.85;text-align:justify;word-break:normal;overflow-wrap:anywhere;">${mdInline(v)}</td>
-      </tr>`).join("");
+    // 每个字段独立成块（不用 table，避免 PDF 分页时整块被推到下页造成大片空白）
+    const blocks = fields.map(([k, v]) => `
+      <div class="card-field" style="padding:12px 20px 4px;">
+        <div style="font-size:14px;font-weight:700;color:#64748b;margin:0 0 6px;letter-spacing:0.02em;">${esc(k)}</div>
+        <div style="font-size:16px;line-height:1.85;color:#1e293b;text-align:justify;word-break:normal;overflow-wrap:anywhere;">${mdInline(v)}</div>
+      </div>`).join("");
 
     return `
-    <div style="margin:0 0 16px 0;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background:#fff;">
-      <div style="background:#f8fafc;padding:14px 20px;border-bottom:1px solid #e2e8f0;">
+    <div class="card" style="margin:0 0 18px 0;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background:#fff;page-break-inside:auto;">
+      <div style="background:#f8fafc;padding:13px 20px;border-bottom:1px solid #e2e8f0;page-break-after:avoid;">
         <div style="font-size:17px;font-weight:700;color:#0f172a;">
           <span style="color:#94a3b8;margin-right:6px;">${item.index}.</span>
           <a href="${url}" style="color:#0f172a;text-decoration:none;">${esc(item.repo || item.title)}</a>
         </div>
-        <div style="margin-top:7px;font-size:14px;color:#64748b;">
+        <div style="margin-top:6px;font-size:14px;color:#64748b;">
           ${st.category ? `<span style="background:#eff6ff;color:#1d4ed8;padding:1px 7px;border-radius:10px;margin-right:8px;">${esc(st.category)}</span>` : ""}
           ${st.gain ? `<span style="color:#dc2626;font-weight:700;">★ +${esc(st.gain)}</span>&nbsp;本周&nbsp;&nbsp;` : ""}
           ${st.total ? `总星 ${esc(st.total)}&nbsp;&nbsp;` : ""}
           ${st.heat ? `相对热度 ${esc(st.heat)}%` : ""}
         </div>
       </div>
-      <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
-        <tbody>${rows}</tbody>
-      </table>
+      ${blocks}
+      <div style="padding:0 20px 12px;"></div>
     </div>`;
   }).join("");
 
@@ -347,6 +356,14 @@ export function renderEmailHTML(report, data, { variant = "email" } = {}) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title>
+<style>
+  @media print{
+    body{background:#fff !important;padding:0 !important;}
+    .card{page-break-inside:auto;break-inside:auto;}
+    .card-field{page-break-inside:avoid;break-inside:avoid;}
+    h2,h3{page-break-after:avoid;break-after:avoid;}
+  }
+</style>
 </head>
 <body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans CJK SC','Source Han Sans SC','WenQuanYi Micro Hei',sans-serif;">
 <div style="max-width:780px;margin:0 auto;padding:24px 18px;">
