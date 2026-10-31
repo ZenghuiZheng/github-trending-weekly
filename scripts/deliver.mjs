@@ -10,7 +10,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { ROOT, log, logErr, readJSON, writeText } from "./lib/common.mjs";
+import { ROOT, log, logErr, readJSON } from "./lib/common.mjs";
 import { loadConfig, reportConfigHealth } from "./lib/config.mjs";
 import { renderAll } from "./render.mjs";
 import { htmlToPDF } from "./pdf.mjs";
@@ -20,12 +20,20 @@ import { execFileSync } from "node:child_process";
 
 const args = process.argv.slice(2);
 const dataArg = args.find((a) => a.startsWith("--data="))?.split("=")[1];
+const monthlyOnly = args.includes("--monthly");
 const skipIM = args.includes("--no-im");
 const dryRun = args.includes("--dry-run");
 
-function pickLatest() {
+/**
+ * 选定要推送的数据文件
+ * 月报有 抓取/撰写/推送 三个独立 job，每次重新 checkout，data/ 下可能同时躺着
+ * 周报和月报两份 JSON。按 mtime 取“最新”会抓到周报，导致月报推送用了周的数据。
+ * ↓ 所以：显式 --data 优先；否则按 since 精确选目录，再校验报告是否已生成。
+ */
+function pickLatest(since = null) {
+  const subs = since ? [since] : ["weekly", "monthly"];
   let best = null, bestT = 0;
-  for (const sub of ["weekly", "monthly"]) {
+  for (const sub of subs) {
     const dir = path.join(ROOT, "data", sub);
     let names = [];
     try { names = fs.readdirSync(dir).filter((n) => n.endsWith(".json")); } catch { continue; }
@@ -37,8 +45,26 @@ function pickLatest() {
   return best;
 }
 
+function pickPending(since) {
+  const dir = path.join(ROOT, "data", since);
+  let names = [];
+  try { names = fs.readdirSync(dir).filter((n) => n.endsWith(".json")); } catch { return null; }
+  const sorted = names
+    .map((n) => ({ n, t: fs.statSync(path.join(dir, n)).mtimeMs }))
+    .sort((a, b) => b.t - a.t);
+  // 优先选已生成报告的（即已完成 write 阶段）
+  for (const { n } of sorted) {
+    const d = readJSON(path.join(dir, n));
+    if (d?.reportPath || d?.reportGeneratedAt) return path.join(dir, n);
+  }
+  return sorted.length ? path.join(dir, sorted[0].n) : null;
+}
+
 async function main() {
-  const dataFile = dataArg ? path.join(ROOT, dataArg) : pickLatest();
+  // 月报 workflow 会传 --monthly，避免误推周报
+  const dataFile = dataArg
+    ? path.join(ROOT, dataArg)
+    : (monthlyOnly ? pickPending("monthly") : pickLatest());
   if (!dataFile) throw new Error("未找到数据文件");
 
   const data = readJSON(dataFile);
@@ -63,7 +89,9 @@ async function main() {
     logErr("校验失败，终止发送");
     await sendAlert(
       "报告校验未通过，本期报告未发送",
-      `数据文件: ${relData}\n\n详见日志: logs/${new Date().toISOString().slice(0, 10)}.log\n\n可能原因：\n` +
+      `数据文件: ${relData}\n\n详见日志: logs/${new Date().toISOString().slice(0, 10)}.log\n\n` +
+      `第一步先看 verify 的真实输出，不要猜。常见原因：\n` +
+      `· 报告文件不存在（write 阶段失败/未运行，或文件名与 window 不匹配）\n` +
       `· 报告中出现了数据里没有的数字（LLM 编造）\n` +
       `· 安装命令不在 README 原文中\n` +
       `· 有项目缺失或占位符未填充\n` +

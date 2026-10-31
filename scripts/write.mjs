@@ -10,7 +10,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { ROOT, log, logErr, readJSON, writeJSON, writeText, retry, lastDayOf } from "./lib/common.mjs";
+import { ROOT, log, logErr, readJSON, writeJSON, writeText, retry, monthFileBase, weekFileBase } from "./lib/common.mjs";
 import { loadConfig, reportConfigHealth } from "./lib/config.mjs";
 
 const args = process.argv.slice(2);
@@ -64,7 +64,7 @@ function buildUserPrompt(data) {
     简介: it.desc || "（仓库未提供简介）",
     标签: it.topicsLine || "（无）",
     README开头: it.install?.intro || "（未获取）",
-    本周涨星: it.gain,
+    本期涨星: it.gain,
     总星: it.stars,
     相对热度: it.relativeHeatPct != null ? `${it.relativeHeatPct}%` : "无法计算",
     创建时间: it.createdAt || "未知",
@@ -199,11 +199,10 @@ async function main() {
     label: "LLM 撰写",
   });
 
-  // 落盘
+  // 落盘（文件名 = 数据 dict 的 window 推导，与 verify/render 共用同一函数，禁止各自拼）
   const outDir = isMonthly ? "月总结" : "周总结";
-  const name = isMonthly
-    ? `Github每月开源热榜—${data.window.year}年${data.window.month}月.md`
-    : `Github每周开源热榜—${data.window.startISO}至${lastDayOf(data.window.endISO)}.md`;
+  const baseName = isMonthly ? monthFileBase(data.window) : weekFileBase(data.window);
+  const name = `${baseName}.md`;
 
   const outPath = path.join(ROOT, outDir, name);
   writeText(outPath, markdown);
@@ -211,6 +210,7 @@ async function main() {
 
   // 记录到数据文件
   data.reportPath = path.relative(ROOT, outPath);
+  data.reportBaseName = baseName;
   data.reportGeneratedAt = new Date().toISOString();
   data.reportCharCount = markdown.length;
   writeJSON(file, data);
