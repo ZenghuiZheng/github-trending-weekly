@@ -15,8 +15,10 @@ import fs from "node:fs";
 import path from "node:path";
 import {
   ROOT, log, logErr, todayCN, weekWindowCN, monthWindowCN,
-  writeJSON, writeText, httpFetch, retry, num, readJSON,
+  writeJSON, writeText, num, readJSON,
 } from "./lib/common.mjs";
+// ★ 必须用带多源回退的抓取器：直接 fetch github.com 在 CI 上偶发超时
+import { fetchTrendingHTML } from "./lib/fetcher.mjs";
 
 const args = process.argv.slice(2);
 const since = (args.find((a) => a.startsWith("--since="))?.split("=")[1]) || "weekly";
@@ -75,15 +77,9 @@ async function main() {
   const dateInfo = todayCN();
   log(`开始抓取 ${URL_TRENDING}（${dateInfo.iso}）`);
 
-  const html = await retry(async () => {
-    const res = await httpFetch(URL_TRENDING, {
-      headers: { "Accept-Language": "en-US,en;q=0.9" },
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const text = await res.text();
-    if (text.length < 10000) throw new Error(`返回内容过短: ${text.length}`);
-    return text;
-  }, { label: "抓取 trending" });
+  // 多源回退（官方 → 镜像），单源内多次重试；全部失败才抛错
+  const { html, source } = await fetchTrendingHTML(since);
+  log(`抓取成功，实际使用源: ${source}`);
 
   // 原始 HTML 留档
   const snapPath = path.join(ROOT, "snapshots", `${since}-${dateInfo.iso}.html`);
@@ -128,7 +124,7 @@ async function main() {
   // 重跑同一天时，保留上一轮已生成的报告路径，避免 write→deliver 分离运行时丢失
   const prev = readJSON(outPath, null);
   if (prev) {
-    for (const k of ["reportPath", "reportGeneratedAt", "reportCharCount", "streaks"]) {
+    for (const k of ["reportPath", "reportGeneratedAt", "reportCharCount", "streaks", "reportBaseName"]) {
       if (prev[k] !== undefined) payload[k] = prev[k];
     }
 

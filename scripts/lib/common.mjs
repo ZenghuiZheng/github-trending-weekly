@@ -97,16 +97,55 @@ export function weekWindowCN(date = new Date()) {
   return { startISO, endISO, label: `${startISO}至${endISO}` };
 }
 
-/** 月度窗口：截至 今天 0 点 的过去 30 日 */
+/**
+ * 月度窗口：截至 今天 0 点 的过去 30 日
+ *
+ * ★ 时间链路（必须记清）：
+ *   monthly.yml 的 cron "0 16 27-31 * *" = 北京“当月最后一日 24:00”出发
+ *   → 脚本看到的北京今天已经是【下一月 1 日】。
+ *   → 所以窗口结束日 = 今天 - 1 天 = 当月最后一日；归属月 = 今天的月份。
+ *
+ * ★ 旧 bug（月度总结/推送直接失败的原因）：
+ *   旧实现把窗口结束日当成“今天”（= 下一月 1 日），于是：
+ *     · 10-02~10-31 的窗口被算成 10-03~11-01（跨月错位，写进报告里）；
+ *     · 文件名被算成 “2026年11月.md”，而 write.mjs 落盘叫 “10 月”，
+ *       verify/render 找不到报告 → deliver 第一步校验就退出 1，邮件/PDF/IM 全部没发。
+ *
+ * ★ 手工重跑兼容：若在“当月某一天”（非 1 号）手动跑，直接把今天当窗口结束日。
+ */
 export function monthWindowCN(date = new Date()) {
   const t = todayCN(date);
-  const end = new Date(Date.UTC(t.y, t.m - 1, t.d) - 8 * 3600 * 1000);
+
+  // 定时触发（北京 1 号）→ 统计上一个自然月的最后 30 日；
+  // 手工触发（非 1 号）→ 统计截至今天的过去 30 日。
+  const end = t.d === 1
+    ? new Date(Date.UTC(t.y, t.m - 1, 1) - 24 * 3600 * 1000)   // 上个月最后一天
+    : new Date(Date.UTC(t.y, t.m - 1, t.d));                     // 今天
+
   const start = new Date(end.getTime() - 29 * 24 * 3600 * 1000);
-  const s = new Date(start.getTime() + 8 * 3600 * 1000);
-  const e = new Date(end.getTime() + 8 * 3600 * 1000);
-  const startISO = `${s.getUTCFullYear()}-${pad(s.getUTCMonth() + 1)}-${pad(s.getUTCDate())}`;
-  const endISO = `${e.getUTCFullYear()}-${pad(e.getUTCMonth() + 1)}-${pad(e.getUTCDate())}`;
-  return { startISO, endISO, year: t.y, month: t.m, label: `${startISO} 至 ${endISO}（过去 30 日）` };
+  const fmt = (d) => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+
+  // 归属月 = 窗口结束日所在月（10-31 → 10 月）
+  const year = end.getUTCFullYear();
+  const month = end.getUTCMonth() + 1;
+
+  return {
+    startISO: fmt(start),
+    endISO: fmt(end),
+    year,
+    month,
+    label: `${fmt(start)} 至 ${fmt(end)}（过去 30 日）`,
+  };
+}
+
+/** 月报/月数据集的统一文件名底层（write/verify/render 必须完全一致） */
+export function monthFileBase(window) {
+  return `Github每月开源热榜—${window.year}年${window.month}月`;
+}
+
+/** 周报/周数据集的统一文件名底层 */
+export function weekFileBase(window) {
+  return `Github每周开源热榜—${window.startISO}至${lastDayOf(window.endISO)}`;
 }
 
 // ---------------- 重试 ----------------
