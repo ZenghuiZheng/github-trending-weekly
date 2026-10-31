@@ -12,7 +12,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { ROOT, log, logErr, readJSON, writeText, ensureDir, lastDayOf } from "./lib/common.mjs";
+import { ROOT, log, logErr, readJSON, writeText, ensureDir, monthFileBase, weekFileBase } from "./lib/common.mjs";
 
 const args = process.argv.slice(2);
 const dataArg = args.find((a) => a.startsWith("--data="))?.split("=")[1];
@@ -37,7 +37,7 @@ function pickLatest() {
 // ---------------- Markdown 解析 ----------------
 /**
  * 把报告 MD 拆成结构：
- * { title, meta: [], trendText, sections: [{heading, blocks:[{type,text}]}] }
+ * { title, meta: [], trendText, items: [{index,title,repo,body}] }
  */
 export function parseReport(md) {
   const lines = md.split(/\r?\n/);
@@ -66,6 +66,11 @@ export function parseReport(md) {
     buf = [];
   };
 
+  // ★ 趋势区状态机：只采集第一个一级小节（本期趋势 / 本月趋势）的正文。
+  //   旧逻辑会把 Top3 深度点评 / 连续霸榜 / 完整榜单的正文也拼进趋势里，
+  //   导致 IM 卡片和邮件里的「本期趋势」混入无关文字。
+  let trendHeadingSeen = false;
+
   for (; i < lines.length; i++) {
     const line = lines[i];
 
@@ -87,22 +92,36 @@ export function parseReport(md) {
 
     if (cur) {
       buf.push(line);
-    } else {
-      // 还在前言部分（趋势点评等）
-      if (line.startsWith("## ") && !/完整榜单|Top\s*3/i.test(line)) {
-        out.trendHeading = line.replace(/^##\s*/, "");
-      }
-      if (out.trendHeading && line.trim() && !line.startsWith("#") && !line.startsWith(">") && !/^-{3,}$/.test(line.trim())) {
-        out.trendText += line + "\n";
-      }
+      continue;
     }
+
+    // ---- 以下为“前文区”（还没遇到第一个 ### 编号小节） ----
+    if (line.startsWith("## ")) {
+      const heading = line.replace(/^##\s*/, "").trim();
+      if (!trendHeadingSeen && !/完整榜单|Top\s*3|深度点评|连续霸榜/i.test(heading)) {
+        // 第一个一级小节 = 趋势点评，采集它
+        trendHeadingSeen = true;
+        out.trendHeading = heading;
+      } else {
+        // 后续小节（Top3 / 连续霸榜 / 完整榜单…）一律停止采集
+        out.trendHeading = out.trendHeading || heading;
+        trendHeadingSeen = true;
+        out.trendDone = true;
+      }
+      continue;
+    }
+    if (!trendHeadingSeen || out.trendDone) continue;
+    if (line.startsWith("#") || line.startsWith(">") || /^-{3,}$/.test(line.trim())) continue;
+    if (line.trim()) out.trendText += line + "\n";
   }
   flushBuf();
   if (cur) out.items.push(cur);
 
-  // 从 meta 或正文里提取趋势（周报格式：## 本期趋势）
+  out.trendText = out.trendText.trim();
+
+  // 若上面的状态机没抽到内容，回退到正则抓取
   if (!out.trendText) {
-    const tm = md.match(/##\s*(本期趋势|本月趋势)\s*\n+([\s\S]*?)(?=\n##\s|\n###\s|$)/);
+    const tm = md.match(/##\s*(本期趋势|本月趋势|月度趋势)\s*\n+([\s\S]*?)(?=\n##\s|\n###\s|$)/);
     if (tm) out.trendText = tm[2].trim();
   }
 
@@ -116,7 +135,7 @@ function extractFields(item) {
   // 先找出所有字段标题的位置
   // 已知字段名白名单（只有这些才算字段标题，避免正文里的加粗被误判）
   const KNOWN = [
-    "它是什么", "是什么", "解决什么问题", "解决什么", "为什么本周火", "为什么火", "为什么突然火",
+    "它是什么", "是什么", "解决什么问题", "解决什么", "为什么本周火", "为什么本月火", "为什么火", "为什么突然火",
     "时间与成熟度", "时间", "快速上手", "如何快速体验", "快速体验", "应用边界", "边界",
     "许可与状态", "许可",
   ];
@@ -160,14 +179,13 @@ function extractFields(item) {
   return {
     what: pick("它是什么", "是什么"),
     problem: pick("解决什么问题", "解决什么"),
-    why: pick("为什么本周火", "为什么火", "为什么突然火"),
+    why: pick("为什么本周火", "为什么本月火", "为什么火", "为什么突然火"),
     time: pick("时间与成熟度", "时间"),
     install: pick("快速上手", "如何快速体验", "快速体验"),
     boundary: pick("应用边界", "边界"),
     license: pick("许可与状态", "许可"),
   };
 }
-
 
 /**
  * 提取"精简卡片"所需的四个字段，全部来自报告的中文正文。
@@ -209,13 +227,17 @@ export function buildDigest(report, data) {
   });
 }
 
-/** 从项目 title 行提取统计信息 */
+/** 从项目标题/正文提取统计信息 */
 function extractStats(item) {
-  const t = item.title;
-  const gain = (t.match(/\+\s*([\d,]+)/) || [])[1] || null;
-  const total = (t.match(/总星\s*([\d,]+)/) || [])[1] || null;
-  const heat = (t.match(/([\d.]+)\s*%/) || [])[1] || null;
-  const catMatch = (item.body || "").match(/\*\*([\u4e00-\u9fa5A-Za-z]+)\*\*\s*｜/);
+  const t = item.title || "";
+  const b = item.body || "";
+  // ★ 统计行优先从 body 找（"**🧩 插件技能** ｜ ★ 本期 **+15072** ｜ 总星 47721 ｜ 相对热度 **31.6%**"），
+  //   找不到再退回 title。旧实现只看 title，月报里多半拿不到涨星/总星，卡片头部空白。
+  const src = /\+\s*[\d,]/.test(b) ? b : t;
+  const gain = (src.match(/\+\s*([\d,]+)/) || [])[1] || null;
+  const total = (src.match(/总星\s*([\d,]+)/) || [])[1] || null;
+  const heat = (src.match(/([\d.]+)\s*%/) || [])[1] || null;
+  const catMatch = b.match(/\*\*([\u4e00-\u9fa5A-Za-z]+)\*\*\s*｜/);
   return { gain, total, heat, category: catMatch ? catMatch[1] : null };
 }
 
@@ -331,7 +353,7 @@ export function renderEmailHTML(report, data, { variant = "email" } = {}) {
         </div>
         <div style="margin-top:6px;font-size:14px;color:#64748b;">
           ${st.category ? `<span style="background:#eff6ff;color:#1d4ed8;padding:1px 7px;border-radius:10px;margin-right:8px;">${esc(st.category)}</span>` : ""}
-          ${st.gain ? `<span style="color:#dc2626;font-weight:700;">★ +${esc(st.gain)}</span>&nbsp;本周&nbsp;&nbsp;` : ""}
+          ${st.gain ? `<span style="color:#dc2626;font-weight:700;">★ +${esc(st.gain)}</span>&nbsp;${isMonthly ? "本期" : "本周"}&nbsp;&nbsp;` : ""}
           ${st.total ? `总星 ${esc(st.total)}&nbsp;&nbsp;` : ""}
           ${st.heat ? `相对热度 ${esc(st.heat)}%` : ""}
         </div>
@@ -371,8 +393,8 @@ export function renderEmailHTML(report, data, { variant = "email" } = {}) {
   <div style="background:linear-gradient(135deg,#1e293b,#334155);border-radius:12px;padding:22px 20px;color:#fff;margin-bottom:18px;">
     <div style="font-size:22px;font-weight:700;margin-bottom:8px;">${esc(title)}</div>
     <div style="font-size:14px;color:#cbd5e1;line-height:1.85;">
-      统计窗口：${esc(W.startISO)} 00:00 — ${esc(W.endISO)} 00:00（北京时间）<br>
-      ${isMonthly ? "口径说明：截至上列结束日的过去 30 日，非自然月首尾" : "口径说明：过去 7 天"}<br>
+      统计窗口：${esc(W.startISO)} 00:00 — ${esc(W.endISO)} 24:00（北京时间）<br>
+      ${isMonthly ? "口径说明：截至上列结束日（含）的过去 30 日，非自然月首尾" : "口径说明：过去 7 天"}<br>
       数据来源：GitHub Trending（since=${data.since}）｜按期间新增 Star 降序<br>
       收录 ${data.items.length} 个项目，合计新增 ${totalGain.toLocaleString()} Star
     </div>
@@ -411,26 +433,19 @@ export function renderEmailHTML(report, data, { variant = "email" } = {}) {
 export function renderIMText(report, data) {
   const isMonthly = data.since === "monthly";
   const W = data.window;
-  const dateOf = (iso) => {
-    const d = new Date(iso + "T00:00:00Z");
-    d.setUTCDate(d.getUTCDate() - 1);
-    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
-  };
-  const dateLabel = isMonthly ? `${W.year}年${W.month}月` : `${W.startISO}~${dateOf(W.endISO)}`;
+  const dateLabel = isMonthly ? `${W.year}年${W.month}月` : `${W.startISO}~${W.endISO}`;
 
   const trend = (report.trendText || "").replace(/\*\*/g, "").replace(/\n+/g, " ").trim();
-  const trendShort = trend;  // 趋势完整展示，不截断
 
   const lines = [];
   lines.push(`📊 **GitHub ${isMonthly ? "月" : "周"}度开源热榜 · ${dateLabel}**`);
   lines.push(`共 ${data.items.length} 个项目 ｜ 按本期新增 Star 排序`);
   lines.push("");
-  if (trendShort) {
+  if (trend) {
     lines.push(`🔥 **本期趋势**`);
-    lines.push(trendShort);
+    lines.push(trend);
     lines.push("");
   }
-  lines.push("————————————————".slice(0, 0));
 
   buildDigest(report, data).forEach((d) => {
     lines.push(`**${d.index}. [${d.repo}](${d.url})**　★ +${d.gainText}`);
@@ -440,7 +455,7 @@ export function renderIMText(report, data) {
     lines.push("");
   });
 
-  lines.push(`—— 完整报告（含上手方式、应用边界）见邮件附件 PDF`);
+  lines.push(`—— 完整报告见邮件附件 PDF`);
   return lines.join("\n");
 }
 
@@ -462,13 +477,12 @@ function main() {
     log(`解析到 ${report.items.length} 个项目章节`);
   }
 
-  // 文件名与本地 md 完全一致，只是扩展名不同
+  // 文件名与本地 md 完全一致，只是扩展名不同（统一走 common 的同一函数，禁止各自拼）
   // 周报: Github每周开源热榜—2026-10-19至2026-10-25.{md|html|pdf|txt}
   // 月报: Github每月开源热榜—2026年10月.{md|html|pdf|txt}
-  const W = data.window;
   const baseName = data.since === "monthly"
-    ? `Github每月开源热榜—${W.year}年${W.month}月`
-    : `Github每周开源热榜—${W.startISO}至${lastDayOf(W.endISO)}`;
+    ? monthFileBase(data.window)
+    : weekFileBase(data.window);
 
   const previewDir = ensureDir(path.join(ROOT, "preview"));
   const htmlPath = path.join(previewDir, `${baseName}.html`);          // 邮件正文（四项）
