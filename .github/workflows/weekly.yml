@@ -93,7 +93,11 @@ jobs:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
         run: |
-          node scripts/write.mjs
+          DATA=$(ls -t data/weekly/*.json 2>/dev/null | head -1)
+          if [ -z "$DATA" ]; then echo "::error::data/weekly 下没有数据，请先跑 capture 阶段"; exit 1; fi
+          echo "使用数据: $DATA"
+          # ★ 显式传 --file，避免按 mtime 误选到月报数据
+          node scripts/write.mjs --file="$DATA"
 
       # ---------- 阶段 3：校验 + 推送 ----------
       - name: 校验并推送报告
@@ -114,10 +118,14 @@ jobs:
         run: |
           FLAGS=""
           if [ "${{ github.event.inputs.skip_im }}" = "true" ]; then FLAGS="--no-im"; fi
-          node scripts/deliver.mjs $FLAGS
+          DATA=$(ls -t data/weekly/*.json 2>/dev/null | head -1)
+          if [ -z "$DATA" ]; then echo "::error::data/weekly 下没有数据，请先跑 capture/write 阶段"; exit 1; fi
+          echo "使用数据: $DATA"
+          node scripts/deliver.mjs --data="$DATA" $FLAGS
 
       # ---------- 安全：提交前扫描密钥 ----------
       - name: 密钥泄露扫描
+        if: always()
         run: |
           echo "扫描仓库中的疑似密钥..."
           HIT=0
@@ -136,7 +144,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add 周总结/ 月总结/ data/ preview/ 2>/dev/null || git add 周总结/ data/
+          git add 周总结/ 月总结/ data/ 2>/dev/null || git add 周总结/ data/
           if git diff --staged --quiet; then
             echo "无变更，跳过提交"
           else
