@@ -17,7 +17,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { ROOT, log, logErr, readJSON } from "./lib/common.mjs";
+import { ROOT, log, logErr, readJSON, monthFileBase, weekFileBase } from "./lib/common.mjs";
 
 const args = process.argv.slice(2);
 const dataArg = args.find((a) => a.startsWith("--data="))?.split("=")[1];
@@ -71,6 +71,13 @@ function resolveReportPath(data) {
   let names = [];
   try { names = fs.readdirSync(dir).filter((n) => n.endsWith(".md")); } catch { return path.join(dir, "__nonexistent__.md"); }
 
+  // ★ 严格优先：只认由 window 推导出的确定文件名，绝不“取最新”兜底。
+  //   兜底会拿上一期的报告去校验本期数据，反而可能让错版报告被发出去。
+  const baseName = data.since === "monthly" ? monthFileBase(data.window) : weekFileBase(data.window);
+  const exact = path.join(dir, `${baseName}.md`);
+  if (fs.existsSync(exact)) return exact;
+
+  // 次选：文件名包含该窗口标识
   if (data.since === "monthly") {
     const want = `${data.window.year}年${data.window.month}月`;
     const hit = names.find((n) => n.includes(want));
@@ -81,14 +88,7 @@ function resolveReportPath(data) {
     if (hit) return path.join(dir, hit);
   }
 
-  // 退化：取最新修改的那个
-  if (names.length > 0) {
-    const files = names.map((n) => path.join(dir, n))
-      .map((p) => ({ p, t: fs.statSync(p).mtimeMs }))
-      .sort((a, b) => b.t - a.t);
-    return files[0].p;
-  }
-  return path.join(dir, "__nonexistent__.md");
+  return exact;
 }
 
 log(`校验报告: ${path.relative(ROOT, mdFile)}`);
@@ -187,12 +187,19 @@ for (const it of data.items) {
     legalNumbers.add(`${it.relativeHeatPct}%`);
   }
   if (it.ageDays != null) legalNumbers.add(String(it.ageDays));
-  // 允许由日期推导出的“距今天数”（报告会写“最近提交在 N 天前”）
+  // 允许由日期推导出的“距今天数”（报告会写“最近提交在 N 天前”“已停更 N 天”）
+  // ★ 旧逻辑只容差 ±1 天：报告生成后每过一天，校验就失败一次，
+  //   导致「重跑 deliver」永远过不了校验。必须从采集时刻到当前整体容差。
   const pushDate = it.pushedAt ? new Date(it.pushedAt) : null;
   if (pushDate) {
-    const days = Math.floor((Date.now() - pushDate.getTime()) / 86400000);
-    for (let k = -1; k <= 1; k++) legalNumbers.add(String(days + k));
-    // 报告可能写“已停更 N 天”，口径相同
+    const capturedMs = data.capturedAt ? new Date(data.capturedAt).getTime() : null;
+    const then = capturedMs && !Number.isNaN(capturedMs) ? capturedMs : Date.now();
+    const daysThen = Math.floor((then - pushDate.getTime()) / 86400000);
+    // 从采集日到今天的每一天都当作合法（报告可能写当初的天数，也可能写“现在”的天数）
+    const daysNow = Math.floor((Date.now() - pushDate.getTime()) / 86400000);
+    const lo = Math.min(daysThen, daysNow) - 1;
+    const hi = Math.max(daysThen, daysNow) + 1;
+    for (let k = lo; k <= hi; k++) legalNumbers.add(String(k));
   }
   // 允许各类百分比的小数位
   if (it.relativeHeatPct != null) {
@@ -255,7 +262,6 @@ const legalCmdSources = data.items.map((it) => {
 
 const badCommands = [];
 for (const c of mdCommands) {
-  const stripped = c.replace(/^[A-Za-z]+\s+/, (m) => m); // 保留原样
   // 宽松匹配：命令的前两个词能在合法源中找到
   const key = c.split(/\s+/).slice(0, 2).join(" ");
   if (legalCmdSources.includes(key)) continue;
