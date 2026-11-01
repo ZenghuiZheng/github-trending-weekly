@@ -1,0 +1,571 @@
+{
+  "version": 1,
+  "since": "weekly",
+  "capturedAt": "2026-11-01T20:25:41.795Z",
+  "capturedAtCN": "2026-11-02 04:25:41",
+  "dateKey": "2026-11-02",
+  "window": {
+    "startISO": "2026-10-26",
+    "endISO": "2026-11-02",
+    "label": "2026-10-26至2026-11-02"
+  },
+  "source": "https://github.com/trending?since=weekly",
+  "snapshotFile": "snapshots/weekly-2026-11-02.html",
+  "threshold": 500,
+  "maxItems": 10,
+  "totalParsed": 16,
+  "passedCount": 16,
+  "items": [
+    {
+      "repo": "Nutlope/hallmark",
+      "lang": "CSS",
+      "desc": "Anti-AI-slop design skill for Claude Code, Cursor, and Codex.",
+      "stars": 44714,
+      "forks": 2371,
+      "gain": 12062,
+      "periodLabel": "stars this week",
+      "url": "https://github.com/Nutlope/hallmark",
+      "createdAt": "2026-04-27T20:47:10Z",
+      "pushedAt": "2026-10-29T16:50:04Z",
+      "license": "MIT",
+      "archived": false,
+      "openIssues": 72,
+      "topics": [],
+      "homepage": "https://www.usehallmark.com/",
+      "defaultBranch": "main",
+      "topicsLine": "",
+      "ageDays": 187,
+      "isNew": false,
+      "relativeHeatPct": 27,
+      "category": "插件技能",
+      "categoryEmoji": "🧩",
+      "needDeploy": false,
+      "maintenance": "正在维护",
+      "maintenanceNote": "3 天内有提交",
+      "install": {
+        "installHeading": "## Install",
+        "installSection": "## Install\n\n```\nnpx skills add nutlope/hallmark -g\n```\n\n`-g` installs for every project; leave it off to install into the current one. Needs Node 18 or later. The browser checks (`sloplint --render`, screenshots) also need `npm i -g puppeteer-core` and Chrome; without them the static checks still run.\n\n| Harness | Lands in | Invoke |\n| --- | --- | --- |\n| Claude Code | `~/.claude/skills/hallmark` | `/hallmark <prompt>` or describe a new build |\n| Codex CLI | `~/.agents/skills/hallmark` | `$hallmark <prompt>` or describe a new build |\n| Cursor | finds the copies above | `/hallmark <prompt>` or describe a new build |\n| OpenCode | finds the copies above | `/hallmark <prompt>` or describe a new build |\n\n- **One harness only:** `npx skills add nutlope/hallmark -g --agent claude-code` (or `codex`, `opencode`, `cursor`, `github-copilot`).\n- **As a Claude Code plugin:** `/plugin marketplace add nutlope/hallmark`, then `/plugin install hallmark@hallmark` (invoked as `/hallmark:hallmark`).\n- **From a clone:** `node skills/hallmark/scripts/install.mjs` validates every theme and reference before it copies; `install-hook.mjs` adds an edit-time Floor check to Claude Code.\n- **Lint any page:** `node skills/hallmark/scripts/sloplint.mjs <file-or-dir> --render`.\n- **If it does not fire on its own,** name it: *use hallmark to build ...*.",
+        "installCommands": [
+          "npx skills add nutlope/hallmark -g"
+        ],
+        "intro": "**A design skill for Claude Code, Codex, Cursor and OpenCode that refuses to look AI-generated.** Made by Together AI. Hallmark holds a hard floor and then gets out of the way. It deals three themes from a catalog of fifty materials, builds the page around what the visitor came to do, and lints the result in a real browser against the tells that read as machine-made: the eyebrow above every heading, tracked-capital labels, one coloured word in a headline, a page of empty frames or nothing but ph",
+        "found": true,
+        "source": "api",
+        "readmeLength": 8731
+      }
+    },
+    {
+      "repo": "pbakaus/impeccable",
+      "lang": "Rust",
+      "desc": "The design vocabulary for your coding agent. Steer with polish and bolder, review with critique and audit, catch AI slop before it ships.",
+      "stars": 99194,
+      "forks": 5864,
+      "gain": 12031,
+      "periodLabel": "stars this week",
+      "url": "https://github.com/pbakaus/impeccable",
+      "createdAt": "2025-11-16T01:52:04Z",
+      "pushedAt": "2026-11-01T18:04:59Z",
+      "license": "Apache-2.0",
+      "archived": false,
+      "openIssues": 61,
+      "topics": [
+        "agent-skills",
+        "ai",
+        "anti-slop",
+        "design",
+        "slop"
+      ],
+      "homepage": "https://impeccable.style",
+      "defaultBranch": "main",
+      "topicsLine": "agent-skills, ai, anti-slop, design, slop",
+      "ageDays": 350,
+      "isNew": false,
+      "relativeHeatPct": 12.1,
+      "category": "插件技能",
+      "categoryEmoji": "🧩",
+      "needDeploy": false,
+      "maintenance": "正在维护",
+      "maintenanceNote": "0 天内有提交",
+      "install": {
+        "installHeading": "## Installation",
+        "installSection": "## Installation\n\n```bash\nnpx impeccable install\n```\n\nThe installer detects your coding tools, asks whether to install for this project or globally, and offers the design hook where your tool supports one. Accept the hook. Reload your tool afterward. `npx impeccable update` refreshes an existing install. For scripts, pass `--providers=claude,codex,cursor` and `--scope=project|global`.\n\nThree tools need one more step before the hook runs. In Codex, open `/hooks` and approve the project hook (again after an update that changes it). In Grok Build, run `/hooks-trust` or launch with `--trust`. In Hermes Agent, the hook is a plugin: run `hermes plugins enable impeccable-design-hook` once. [Allow the hook in your harness](https://impeccable.style/docs/hooks#allow-the-hook-in-your-harness).\n\nNode is only needed for `npx`. The skill itself runs a self-contained engine binary that ships next to it or downloads once into `~/.impeccable/bin/`.\n\n<details>\n<summary><b>Claude Code, Copilot, and Grok plugins</b></summary>\n\n**Claude Code:** `/plugin marketplace add pbakaus/impeccable`, then open `/plugin` and install Impeccable.\n\n**GitHub Copilot in VS Code:** install [Impeccable from the Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=renaissance-geek.impeccable) or run `code --install-extension renaissance-geek.impeccable`. Needs VS Code 1.109.3+, Copilot Chat, and a trusted workspace. It installs the skill without the hook. [Details](docs/VSCODE-EXTENSION.md).\n\n**Grok Build:** `grok plugin install pbakaus/impeccable#plugin --trust` installs the skill, agents, and hook.\n\n</details>\n\n<details>\n<summary><b>Git submodule (a pinned version for the whole team)</b></summary>\n\n```bash\ngit submodule add https://github.com/pbakaus/impeccable vendor/impeccable\nnpx impeccable link --source=vendor/impeccable --providers=claude,cursor\n```\n\nCommit `.gitmodules`, the submodule, and the generated links. Teammates run `git submodule update --init --recursive`. To upgrade, run `git submodule update --remote vendor/impeccable`, rerun the `link` command, and commit. Linking installs skills, not hooks. Existing skill folders stay put unless you pass `--force`.\n\n</details>\n\n<details>\n<summary><b>Manual copy, no Node required</b></summary>\n\nDownload the ZIP for your tool from [impeccable.style](https://impeccable.style), or clone this repo: each tool's build is committed at the repo root. Copy `skills/impeccable` from the folder below into the same place in your p",
+        "installCommands": [
+          "npx impeccable install",
+          "npx impeccable detect src/                   # scan a directory\nnpx impeccable detect https://example.com    # scan a rendered page (uses your installed Chrome or Edge)\nnpx impeccable detect --json .               # machine-readable output\nnpx impeccable detect --github src/          # GitHub Actions annotations\nnpx impeccable detect --list-rules           # every rule with its id and description",
+          "npx impeccable install",
+          "git submodule add https://github.com/pbakaus/impeccable vendor/impeccable\nnpx impeccable link --source=vendor/impeccable --providers=claude,cursor"
+        ],
+        "intro": "The design vocabulary for your coding agent. Steer with `polish` and `bolder`, review with `critique` and `audit`, and catch AI slop before it ships. From your project root: ```bash npx impeccable install ``` Reload your coding tool, then run `/impeccable init` in your agent (`$impeccable init` on Codex). Works with Claude Code, Cursor, Codex CLI, GitHub Copilot, Devin, Replit Agent, Gemini CLI, Grok Build, OpenCode, Google Antigravity, Kiro, Trae, Rovo Dev, Qoder, Mistral Vibe, Pi, Hermes Agent",
+        "found": true,
+        "source": "api",
+        "readmeLength": 15872
+      }
+    },
+    {
+      "repo": "cloudflare/security-audit-skill",
+      "lang": "JavaScript",
+      "desc": "A coding-agent skill for multi-phase security audits with independently verified, machine-readable findings",
+      "stars": 56235,
+      "forks": 3669,
+      "gain": 11908,
+      "periodLabel": "stars this week",
+      "url": "https://github.com/cloudflare/security-audit-skill",
+      "createdAt": "2026-06-18T14:08:44Z",
+      "pushedAt": "2026-09-14T19:29:02Z",
+      "license": "MIT",
+      "archived": false,
+      "openIssues": 110,
+      "topics": [],
+      "homepage": "",
+      "defaultBranch": "main",
+      "topicsLine": "",
+      "ageDays": 136,
+      "isNew": false,
+      "relativeHeatPct": 21.2,
+      "category": "插件技能",
+      "categoryEmoji": "🧩",
+      "needDeploy": false,
+      "maintenance": "维护中",
+      "maintenanceNote": "最近提交在 48 天前",
+      "install": {
+        "installHeading": "## Installation",
+        "installSection": "## Installation\n\nInstall the skill with the [Skills CLI](https://skills.sh):\n\n```bash\nnpx skills add https://github.com/cloudflare/security-audit-skill \\\n  --skill security-audit\n```\n\nUse `--global` for a user-level installation:\n\n```bash\nnpx skills add https://github.com/cloudflare/security-audit-skill \\\n  --skill security-audit \\\n  --global\n```\n\nRun `npx skills --help` for agent-selection and non-interactive options.",
+        "installCommands": [
+          "npx skills add https://github.com/cloudflare/security-audit-skill \\\n  --skill security-audit",
+          "npx skills add https://github.com/cloudflare/security-audit-skill \\\n  --skill security-audit \\\n  --global"
+        ],
+        "intro": "A coding-agent skill that turns your agent into a security auditor. It orchestrates isolated agents through reconnaissance, coverage-led hunting, candidate validation, structured output, independent record verification, and target-neutral reporting. This is the skill that seeded Cloudflare's vulnerability discovery harness, described in [Build your own vulnerability harness](https://blog.cloudflare.com/build-your-own-vulnerability-harness). The harness grew into a multi-stage, fleet-wide system;",
+        "found": true,
+        "source": "api",
+        "readmeLength": 6946
+      }
+    },
+    {
+      "repo": "YuJunZhiXue/dsh-purge",
+      "lang": "JavaScript",
+      "desc": "DeepSeek Harness 破甲：让所有模型都能破甲，不同模型可换不同提示词；默认提示词面向国模「小码酱」。Jailbreak for every model — swap prompts per model. 求 Star 收藏 ⭐ 如要二开，请查看署名要求部分",
+      "stars": 15307,
+      "forks": 3518,
+      "gain": 6641,
+      "periodLabel": "stars this week",
+      "url": "https://github.com/YuJunZhiXue/dsh-purge",
+      "createdAt": "2026-08-19T07:41:12Z",
+      "pushedAt": "2026-11-01T17:31:26Z",
+      "license": "Apache-2.0",
+      "archived": false,
+      "openIssues": 6,
+      "topics": [
+        "deepseek",
+        "deepseek-harness",
+        "dsh-plugin",
+        "dsh-plugins",
+        "harness-jailbreak",
+        "jailbreak",
+        "llm-jailbreak"
+      ],
+      "homepage": "",
+      "defaultBranch": "master",
+      "topicsLine": "deepseek, deepseek-harness, dsh-plugin, dsh-plugins, harness-jailbreak, jailbreak",
+      "ageDays": 74,
+      "isNew": true,
+      "relativeHeatPct": 43.4,
+      "category": "插件技能",
+      "categoryEmoji": "🧩",
+      "needDeploy": false,
+      "maintenance": "正在维护",
+      "maintenanceNote": "0 天内有提交",
+      "install": {
+        "installHeading": "## Install",
+        "installSection": "## Install\n\n**Do not use the plugin marketplace.** One-click install on [dsh-plugin.org](https://dsh-plugin.org) or in Settings → Plugin Market fails with `already queued: dsh-purge` and never runs a command. The name is not on the npm registry, so do not `pnpm add dsh-purge`.\n\n### Quick start\n\nHave `dsh` on PATH? One command, one restart, one click. Run the line for the host you open (the desktop EXE is the same with `desktop` instead of `web`):\n\n```sh",
+        "installCommands": [
+          "git clone https://github.com/YuJunZhiXue/dsh-purge.git \"$DSH_HOME/plugins/dsh-purge\"",
+          "cd \"$DSH_HOME/profiles/web\"   # or profiles/desktop\npnpm install"
+        ],
+        "intro": "People have been selling this open-source work in the open. After that, the author was asked to come in and talk. No need to spell out the rest. Read between the lines. From now on the **public internet is closed**. The open-source build only allows **local lab IPs**: loopback and RFC1918. Domains are resolved first (including hosts); every answer must be private or loopback. A hosts trick that points `.lab` at a public IP, a failed lookup, or a mixed public answer is blocked. **Game cheats are ",
+        "found": true,
+        "source": "api",
+        "readmeLength": 34066
+      }
+    },
+    {
+      "repo": "affaan-m/ECC",
+      "lang": "JavaScript",
+      "desc": "The agent harness performance optimization system. Skills, instincts, memory, security, and research-first development for Claude Code, Codex, Opencode, Cursor and beyond.",
+      "stars": 294689,
+      "forks": 43622,
+      "gain": 6380,
+      "periodLabel": "stars this week",
+      "url": "https://github.com/affaan-m/ECC",
+      "createdAt": "2026-01-18T00:51:51Z",
+      "pushedAt": "2026-10-30T03:06:42Z",
+      "license": "MIT",
+      "archived": false,
+      "openIssues": 199,
+      "topics": [
+        "ai-agents",
+        "anthropic",
+        "claude",
+        "claude-code",
+        "developer-tools",
+        "llm",
+        "mcp",
+        "productivity"
+      ],
+      "homepage": "https://ecc.tools",
+      "defaultBranch": "main",
+      "topicsLine": "ai-agents, anthropic, claude, claude-code, developer-tools, llm",
+      "ageDays": 287,
+      "isNew": false,
+      "relativeHeatPct": 2.2,
+      "category": "插件技能",
+      "categoryEmoji": "🧩",
+      "needDeploy": false,
+      "maintenance": "正在维护",
+      "maintenanceNote": "2 天内有提交",
+      "install": {
+        "installHeading": "## Install with Claude Code",
+        "installSection": "## Install with Claude Code\n\nUse the [guided setup](#install-ecc) or [native plugin commands](#claude-code-details). Both install the same `ecc@ecc` plugin. Choose one and do not stack a full manual Claude install on top.\n\n<div align=\"center\">\n\n<table aria-label=\"ECC primary links\">\n<tr>\n<td width=\"33%\" align=\"center\">\n  <a href=\"https://ecc.tools/pricing\">\n    <img src=\"assets/images/community/ecc-tools-mark.svg\" height=\"42\" alt=\"ECC Tools\" /><br />\n    <strong>ECC Pro + GitHub App</strong>\n  </a><br />\n  <sub><a href=\"https://github.com/apps/ecc-tools\">Install free</a> · <a href=\"https://ecc.tools/pricing\">Private repos from $19/seat/mo</a></sub>\n</td>\n<td width=\"33%\" align=\"center\">\n  <a href=\"https://github.com/sponsors/affaan-m\">\n    <img src=\"assets/images/community/heart.svg\" height=\"42\" alt=\"\" /><br />\n    <strong>Sponsor ECC</strong>\n  </a><br />\n  <sub>Fund the open-source project</sub>\n</td>\n<td width=\"33%\" align=\"center\">\n  <a href=\"https://discord.gg/36yGMHGFbR\">\n    <img src=\"assets/images/community/discord.svg\" height=\"42\" alt=\"Discord\" /><br />\n    <strong>Community</strong>\n  </a><br />\n  <sub>Discord · Q&amp;A · Show and Tell</sub>\n</td>\n</tr>\n</table>\n\n</div>\n\n<sub>**OSS stays free.** This repo is MIT-licensed forever. ECC Pro is the hosted GitHub App for private repos. <a href=\"https://github.com/sponsors/affaan-m\">Sponsors</a> and <a href=\"https://ecc.tools/pricing\">Pro subscribers</a> fund the work. That's why a single maintainer ships weekly across 7 harnesses.</sub>\n\n<div align=\"center\">\n\n<sub><strong>Partners &amp; sponsors</strong></sub>\n\n<p align=\"center\" aria-label=\"Partners and sponsors\">\n  <a href=\"https://www.coderabbit.ai\" title=\"CodeRabbit\"><img src=\"assets/images/sponsors/coderabbit.png\" height=\"54\" alt=\"CodeRabbit\" /></a>&nbsp;&nbsp;&nbsp;\n  <a href=\"https://www.greptile.com/go/ecc\" title=\"Greptile\"><img src=\"assets/images/sponsors/greptile.png\" height=\"54\" alt=\"Greptile\" /></a>&nbsp;&nbsp;&nbsp;\n  <a href=\"https://platform.kimi.ai?aff=ecc\" title=\"Moonshot AI - Kimi\"><picture><source media=\"(prefers-color-scheme: dark)\" srcset=\"assets/images/sponsors/moonshot-dark.png\" /><img src=\"assets/images/sponsors/moonshot.png\" width=\"132\" alt=\"Moonshot AI - Kimi\" /></picture></a>&nbsp;&nbsp;&nbsp;\n  <a href=\"https://compute.itomarkets.com\" title=\"Itô Markets\"><picture><source media=\"(prefers-color-scheme: light)\" srcset=\"assets/images/sponsors/ito-transparent-light.png\" /><img src=\"assets/images/sponsors/ito-transparent.png\" width=",
+        "installCommands": [
+          "npx ecc-universal@2.2.3 setup",
+          "npx ecc-universal@2.2.3 setup",
+          "npx ecc-universal@2.2.3 install --guided",
+          "npx ecc-universal@2.2.3 install --guided \\\n  --harness claude --harness codex --harness kimi \\\n  --claude-scope local --claude-hooks standard \\\n  --profile core --yes"
+        ],
+        "intro": "> [!WARNING] > **Official sources only.** Install ECC only from verified channels: the GitHub repository [github.com/affaan-m/ECC](https://github.com/affaan-m/ECC), the npm packages [`ecc-universal`](https://www.npmjs.com/package/ecc-universal) and [`ecc-agentshield`](https://www.npmjs.com/package/ecc-agentshield), the [GitHub App](https://github.com/apps/ecc-tools), the plugin slug `ecc@ecc`, and the project website [ecc.tools](https://ecc.tools). Third-party re-uploads and unofficial mirrors a",
+        "found": true,
+        "source": "api",
+        "readmeLength": 116553
+      }
+    },
+    {
+      "repo": "JetBrains/thinkrail",
+      "lang": "TypeScript",
+      "desc": "Vibe code with pi in a lightweight, real IDE that customises itself around the way you work — The Vibe You Need",
+      "stars": 6943,
+      "forks": 389,
+      "gain": 5738,
+      "periodLabel": "stars this week",
+      "url": "https://github.com/JetBrains/thinkrail",
+      "createdAt": "2026-07-08T07:40:43Z",
+      "pushedAt": "2026-11-01T18:20:32Z",
+      "license": "Apache-2.0",
+      "archived": false,
+      "openIssues": 323,
+      "topics": [
+        "agent",
+        "agent-skills",
+        "agentic-ai",
+        "agentic-workflow",
+        "ai-coding",
+        "ai-tools",
+        "pi-agent",
+        "pi-agent-extension",
+        "spec-driven",
+        "spec-driven-coding",
+        "spec-driven-development",
+        "vibe-coding",
+        "vibecoding"
+      ],
+      "homepage": "https://thinkrail.ai/",
+      "defaultBranch": "main",
+      "topicsLine": "agent, agent-skills, agentic-ai, agentic-workflow, ai-coding, ai-tools",
+      "ageDays": 116,
+      "isNew": false,
+      "relativeHeatPct": 82.6,
+      "category": "插件技能",
+      "categoryEmoji": "🧩",
+      "needDeploy": false,
+      "maintenance": "正在维护",
+      "maintenanceNote": "0 天内有提交",
+      "install": {
+        "installHeading": "## Install",
+        "installSection": "## Install\n\nThinkRail ships in two additive forms: a native desktop installer and the self-contained `thinkrail` CLI.\nBoth are published with `SHA256SUMS` on the [releases page](https://github.com/JetBrains/thinkrail/releases).\n\n### Desktop\n\nDownload the `thinkrail-desktop-*` asset for your platform:\n\n- **macOS 14+ (Apple Silicon or Intel)** — open the DMG for your architecture:\n  `thinkrail-desktop-darwin-arm64.dmg` or `thinkrail-desktop-darwin-x64.dmg`.\n- **Windows x64** — extract the complete setup ZIP, then run its setup executable in place, next to its\n  payload.\n- **Linux x64 / ARM64** — extract the setup tarball and run `installer`. Desktop builds need glibc 2.38+\n  with GTK 3, WebKitGTK 4.1, Ayatana AppIndicator 3, and librsvg 2 — Ubuntu 24.04 or newer:\n\n  ```bash\n  sudo apt install libgtk-3-0 libwebkit2gtk-4.1-0 libayatana-appindicator3-1 librsvg2-2\n  ```\n\nPackaged stable and nightly desktop builds check for updates in the background and offer them in\n**Settings → Updates**: **Download** → **Preparing update** → **Install & Restart**. Nothing is applied until\nyou choose **Install & Restart**. ThinkRail then shows the installation's progress and log, closes, and\nreopens on the new version. After the restart it tells you whether the update installed. If it didn't, it\nexplains why and offers to retry. The updater appears only when the package carries a valid HTTPS feed\nidentity; installations that predate that identity need one manual installation first.\n\n### Command line\n\nThe installer downloads the right binary, verifies its SHA-256 checksum, and puts `thinkrail` on your PATH.\n\n**macOS / Linux** (also Windows under Git Bash):\n\n```bash\ncurl -fsSL https://raw.githubusercontent.com/JetBrains/thinkrail/main/install.sh | bash\n```\n\n**Windows** — the same command works from cmd and PowerShell:\n\n```powershell\npowershell -c \"irm https://raw.githubusercontent.com/JetBrains/thinkrail/main/install.ps1 | iex\"\n```\n\nThen run `thinkrail`, optionally with a git repo to open as a project:\n\n```bash\nthinkrail ~/code/my-repo\n```\n\n`thinkrail` needs `git` on your PATH and a model provider — sign in with JetBrains AI from the app or use\nyour own provider credentials. The first launch walks you through connecting a provider and picking a\nproject; **Start a new project** creates an empty git repository (under `~/thinkrail` by default), so you\ndon't need one ready. **Add project → Clone repository…** clones a Git URL into a new folder on the\ncomputer running ThinkRail and op",
+        "installCommands": [
+          "curl -fsSL https://raw.githubusercontent.com/JetBrains/thinkrail/main/install.sh | bash",
+          "curl -fsSL https://raw.githubusercontent.com/JetBrains/thinkrail/main/install.sh | bash -s -- --channel nightly\ncurl -fsSL https://raw.githubusercontent.com/JetBrains/thinkrail/main/install.sh | bash -s -- --channel stable --version 0.1.2\ncurl -fsSL https://raw.githubusercontent.com/JetBrains/thinkrail/main/install.sh | bash -s -- --channel nightly --version 0.2.0-nightly.10",
+          "git clone https://github.com/JetBrains/thinkrail.git\ncd thinkrail\nbun install\nbun run dev                          # host + web client together; Ctrl+C stops both"
+        ],
+        "intro": "ThinkRail is the agentic IDE that gets better every time you use it — learning your project through living specs today, and building its own capabilities tomorrow. We built a rich interface around the [`pi`](https://www.npmjs.com/package/@earendil-works/pi-coding-agent) coding agent, isolated work into separate workspaces, and gave the agent durable project knowledge through living specs and reusable skills. Next, we're adding full extension support, so ThinkRail can create the tools it needs ba",
+        "found": true,
+        "source": "api",
+        "readmeLength": 19460
+      }
+    },
+    {
+      "repo": "obra/superpowers",
+      "lang": "Shell",
+      "desc": "An agentic skills framework &amp; software development methodology that works.",
+      "stars": 310559,
+      "forks": 27639,
+      "gain": 5636,
+      "periodLabel": "stars this week",
+      "url": "https://github.com/obra/superpowers",
+      "createdAt": "2025-10-09T19:45:18Z",
+      "pushedAt": "2026-10-29T23:35:34Z",
+      "license": "MIT",
+      "archived": false,
+      "openIssues": 377,
+      "topics": [
+        "ai",
+        "brainstorming",
+        "coding",
+        "obra",
+        "sdlc",
+        "skills",
+        "subagent-driven-development",
+        "superpowers"
+      ],
+      "homepage": "",
+      "defaultBranch": "main",
+      "topicsLine": "ai, brainstorming, coding, obra, sdlc, skills",
+      "ageDays": 388,
+      "isNew": false,
+      "relativeHeatPct": 1.8,
+      "category": "插件技能",
+      "categoryEmoji": "🧩",
+      "needDeploy": false,
+      "maintenance": "正在维护",
+      "maintenanceNote": "2 天内有提交",
+      "install": {
+        "installHeading": "## Installation",
+        "installSection": "## Installation\n\nInstallation differs by harness. If you use more than one, install Superpowers separately for each one.\n\n### Claude Code\n\nSuperpowers is available via the [official Claude plugin marketplace](https://claude.com/plugins/superpowers)\n\n#### Official Marketplace\n\n- Install the plugin from Anthropic's official marketplace:\n\n  ```bash\n  /plugin install superpowers@claude-plugins-official\n  ```\n\n#### Superpowers Marketplace\n\nThe Superpowers marketplace provides Superpowers and some other related plugins for Claude Code.\n\n- Register the marketplace:\n\n  ```bash\n  /plugin marketplace add obra/superpowers-marketplace\n  ```\n\n- Install the plugin from this marketplace:\n\n  ```bash\n  /plugin install superpowers@superpowers-marketplace\n  ```\n\n### Antigravity\n\nInstall Superpowers as a plugin from this repository:\n\n```bash\nagy plugin install https://github.com/obra/superpowers\n```\n\nAntigravity lists each installed skill's description, and the description of\nthe `using-superpowers` skill prompts the model to load that skill at the start\nof a conversation. Reinstall with the same command to update.\n\n### Codex App\n\nSuperpowers is available via the [official Codex plugin marketplace](https://github.com/openai/plugins).\n\n- In the Codex app, click on Plugins in the sidebar.\n- You should see `Superpowers` in the Coding section.\n- Click the `+` next to Superpowers and follow the prompts.\n\n### Codex CLI\n\nSuperpowers is available via the [official Codex plugin marketplace](https://github.com/openai/plugins).\n\n- Open the plugin search interface:\n\n  ```bash\n  /plugins\n  ```\n\n- Search for Superpowers:\n\n  ```bash\n  superpowers\n  ```\n\n- Select `Install Plugin`.\n\n### Cursor\n\n- In Cursor Agent chat, install from marketplace:\n\n  ```text\n  /add-plugin superpowers\n  ```\n\n- Or search for \"superpowers\" in the plugin marketplace.\n\n### Devin CLI\n\n- Install the plugin from this repository:\n\n  ```bash\n  devin plugins install obra/superpowers\n  ```\n\n- Update to the latest version with:\n\n  ```bash\n  devin plugins update superpowers\n  ```\n\n### Factory Droid\n\n- Register the marketplace:\n\n  ```bash\n  droid plugin marketplace add https://github.com/obra/superpowers\n  ```\n\n- Install the plugin:\n\n  ```bash\n  droid plugin install superpowers@superpowers\n  ```\n\n### Gemini CLI\n\n- Install the extension:\n\n  ```bash\n  gemini extensions install https://github.com/obra/superpowers\n  ```\n\n- Update later:\n\n  ```bash\n  gemini extensions update superpowers\n  ```\n\n### GitHub Copilot CLI\n\n- Register the ",
+        "installCommands": [
+          "git clone https://github.com/obra/superpowers.git\n  muse plugins install ./superpowers\n  muse plugins approve superpowers"
+        ],
+        "intro": "Superpowers is a complete software development methodology for your coding agents, built on top of a set of composable skills and some initial instructions that make sure your agent uses them. - [How it works](#how-it-works) - [Commercial Services](#commercial-services) - [Getting Started](#installation) - [Claude Code](#claude-code) - [Antigravity](#antigravity) - [Codex App](#codex-app) - [Codex CLI](#codex-cli)",
+        "found": true,
+        "source": "api",
+        "readmeLength": 14835
+      }
+    },
+    {
+      "repo": "TauricResearch/TradingAgents",
+      "lang": "Python",
+      "desc": "TradingAgents: Multi-Agents LLM Financial Trading Framework",
+      "stars": 119465,
+      "forks": 22858,
+      "gain": 5483,
+      "periodLabel": "stars this week",
+      "url": "https://github.com/TauricResearch/TradingAgents",
+      "createdAt": "2024-12-28T03:31:08Z",
+      "pushedAt": "2026-10-27T08:43:04Z",
+      "license": "Apache-2.0",
+      "archived": false,
+      "openIssues": 105,
+      "topics": [
+        "agent",
+        "finance",
+        "llm",
+        "multiagent",
+        "trading"
+      ],
+      "homepage": "https://arxiv.org/pdf/2412.20138",
+      "defaultBranch": "main",
+      "topicsLine": "agent, finance, llm, multiagent, trading",
+      "ageDays": 673,
+      "isNew": false,
+      "relativeHeatPct": 4.6,
+      "category": "可运行工具",
+      "categoryEmoji": "🛠",
+      "needDeploy": true,
+      "maintenance": "正在维护",
+      "maintenanceNote": "5 天内有提交",
+      "install": {
+        "installHeading": "## Installation and CLI",
+        "installSection": "## Installation and CLI\n\n### Installation\n\nClone TradingAgents:\n```bash\ngit clone https://github.com/TauricResearch/TradingAgents.git\ncd TradingAgents\n```\n\nTradingAgents needs Python 3.11 or later. Create a virtual environment in any of your favorite environment managers:\n```bash\nconda create -n tradingagents python=3.13\nconda activate tradingagents\n```\n\nOr with [uv](https://docs.astral.sh/uv/):\n```bash\nuv venv --python 3.13\nsource .venv/bin/activate\n```\n\nInstall the package and its dependencies (`uv pip install .` with uv):\n```bash\npip install .\n```\n\n### Docker\n\nAlternatively, run with Docker:\n```bash\ncp .env.example .env  # add your API keys\ndocker compose run --rm tradingagents\n```\n\nAfter updating the repository, rebuild the image with `docker compose build`.\n\nResults, reports, the memory log and the cache live in the `tradingagents_data` volume. To keep them in a folder on the host instead, create the folder and point `TRADINGAGENTS_DATA_DIR` at it, in `.env` or the shell: `mkdir -p data && TRADINGAGENTS_DATA_DIR=./data docker compose run --rm tradingagents`.\n\nFor local models with Ollama:\n```bash\ndocker compose --profile ollama run --rm tradingagents-ollama\n```\n\n### Required APIs\n\nTradingAgents supports multiple LLM providers. Set the API key for your chosen provider:\n\n```bash\nexport OPENAI_API_KEY=...          # OpenAI (GPT)\nexport GOOGLE_API_KEY=...          # Google (Gemini)\nexport ANTHROPIC_API_KEY=...       # Anthropic (Claude)\nexport XAI_API_KEY=...             # xAI (Grok)\nexport DEEPSEEK_API_KEY=...        # DeepSeek\nexport DASHSCOPE_API_KEY=...       # Qwen (international, dashscope-intl.aliyuncs.com)\nexport DASHSCOPE_CN_API_KEY=...    # Qwen (China, dashscope.aliyuncs.com)\nexport ZHIPU_API_KEY=...           # GLM via Z.AI (international)\nexport ZHIPU_CN_API_KEY=...        # GLM via BigModel (China, open.bigmodel.cn)\nexport MINIMAX_API_KEY=...         # MiniMax (global, api.minimax.io)\nexport MINIMAX_CN_API_KEY=...      # MiniMax (China, api.minimaxi.com)\nexport OPENROUTER_API_KEY=...      # OpenRouter\nexport MISTRAL_API_KEY=...         # Mistral\nexport MOONSHOT_API_KEY=...        # Kimi (Moonshot)\nexport GROQ_API_KEY=...            # Groq\nexport NVIDIA_API_KEY=...          # NVIDIA NIM\nexport FRED_API_KEY=...            # FRED macro data (free, optional)\nexport ALPHA_VANTAGE_API_KEY=...   # Alpha Vantage\nexport TYPESAFE_API_KEY=...        # Jev social-post screening (optional)\n```\n\nFor Azure OpenAI, copy `.env.enterprise.example` to `.env.en",
+        "installCommands": [
+          "git clone https://github.com/TauricResearch/TradingAgents.git\ncd TradingAgents",
+          "pip install .",
+          "cp .env.example .env  # add your API keys\ndocker compose run --rm tradingagents",
+          "docker compose --profile ollama run --rm tradingagents-ollama"
+        ],
+        "intro": "--- - [2026-10] **TradingAgents v0.7.1** released with decisions scored only on final closes and settled across long market holidays, a fix for model dates that could read filings made after the run date, and fixes to portfolios, prices, SEC statements and reports. - [2026-10] **TradingAgents v0.7.0** released with runs on your own ChatGPT Plus or Pro plan, backtests scored from the first close after each decision, a note at start-up when a newer release is out, and a wheel attached to each GitH",
+        "found": true,
+        "source": "api",
+        "readmeLength": 27564
+      }
+    },
+    {
+      "repo": "Leonxlnx/taste-skill",
+      "lang": "JavaScript",
+      "desc": "Agent skills that give coding agents taste: art direction, reference images and a browser check instead of generic AI pages",
+      "stars": 107652,
+      "forks": 7275,
+      "gain": 4975,
+      "periodLabel": "stars this week",
+      "url": "https://github.com/Leonxlnx/taste-skill",
+      "createdAt": "2026-02-19T21:44:05Z",
+      "pushedAt": "2026-10-31T07:59:58Z",
+      "license": "MIT",
+      "archived": false,
+      "openIssues": 9,
+      "topics": [
+        "agent-skills",
+        "ai-agents",
+        "anti-slop",
+        "claude-code",
+        "codex",
+        "cursor",
+        "design-system",
+        "frontend",
+        "landing-page",
+        "ui-design",
+        "web-design"
+      ],
+      "homepage": "https://tasteskill.dev",
+      "defaultBranch": "main",
+      "topicsLine": "agent-skills, ai-agents, anti-slop, claude-code, codex, cursor",
+      "ageDays": 254,
+      "isNew": false,
+      "relativeHeatPct": 4.6,
+      "category": "插件技能",
+      "categoryEmoji": "🧩",
+      "needDeploy": false,
+      "maintenance": "正在维护",
+      "maintenanceNote": "1 天内有提交",
+      "install": {
+        "installHeading": "## Install",
+        "installSection": "## Install\n\n```bash\nnpx skills add https://github.com/Leonxlnx/taste-skill --skill \"design-taste-frontend\"\n```\n\nThat installs the skill with the [`npx skills`](https://github.com/vercel-labs/agent-skills) CLI.\n\nThe skill runs its scripts with **Node 22+** and an installed **Chrome, Edge or Chromium**. It installs nothing and needs no API keys. Finding pictures needs network access.\n\n<details>\n<summary>Claude Code plugin</summary>\n\nRun these inside Claude Code. The skill is namespaced under `taste-skill:`, so it does not collide with your other skills.\n\n```\n/plugin marketplace add Leonxlnx/taste-skill\n/plugin install taste-skill@taste-skill\n```\n\n`/plugin update` upgrades it later.\n\n</details>\n\n<details>\n<summary>Codex plugin</summary>\n\n```bash\ncodex plugin marketplace add Leonxlnx/taste-skill\ncodex plugin add taste-skill@taste-skill\n```\n\nStart a new Codex session afterwards so the skill is loaded.\n\n</details>\n\n<details>\n<summary>From a clone, linked instead of copied</summary>\n\n`./install.sh` symlinks the skill into Claude Code (`--codex` for Codex, `--all-agents` for both), so a `git pull` updates it in place.\n\n</details>\n\nAlready have the skill? Run the install command again; the install name did not change. Looking for one of the older skills? See [Moved skills](#moved-skills).",
+        "installCommands": [
+          "npx skills add https://github.com/Leonxlnx/taste-skill --skill \"design-taste-frontend\"",
+          "npx skills add https://github.com/Leonxlnx/taste-skill-classics --skill \"high-end-visual-design\""
+        ],
+        "intro": " &nbsp; &nbsp; &nbsp; **Taste Skill** is an Agent Skill that makes coding agents design websites and app screens instead of assembling the average landing page. It gives the agent an art direction, real pictures and a way to check its own work in a real browser. Pages it has built, each from one brief: The photographs are real, found in open archives and credited by the skill ([credits](examples/v2/CREDITS.md)). Watch the [launch film](https://github.com/Leonxlnx/taste-skill/releases/tag/v2.0.0)",
+        "found": true,
+        "source": "api",
+        "readmeLength": 15083
+      }
+    },
+    {
+      "repo": "AgriciDaniel/claude-seo",
+      "lang": "Python",
+      "desc": "Universal SEO skill for Claude Code. 26 sub-skills + 19 sub-agents covering technical SEO, E-E-A-T, schema, GEO/AEO, agent readiness (Lighthouse Agentic Browsing, WebMCP, llms.txt), backlinks, local SEO, e-commerce, international SEO, Google APIs, and PDF/Excel reporting. 9 optional extensions for live SEO data.",
+      "stars": 25452,
+      "forks": 3350,
+      "gain": 4814,
+      "periodLabel": "stars this week",
+      "url": "https://github.com/AgriciDaniel/claude-seo",
+      "createdAt": "2026-02-07T08:17:38Z",
+      "pushedAt": "2026-11-01T06:07:26Z",
+      "license": "MIT",
+      "archived": false,
+      "openIssues": 78,
+      "topics": [
+        "ai",
+        "ai-seo",
+        "claude-code",
+        "claude-code-skill",
+        "marketing-automation",
+        "open-source",
+        "seo"
+      ],
+      "homepage": "skool.com/ai-marketing-hub-pro",
+      "defaultBranch": "main",
+      "topicsLine": "ai, ai-seo, claude-code, claude-code-skill, marketing-automation, open-source",
+      "ageDays": 267,
+      "isNew": false,
+      "relativeHeatPct": 18.9,
+      "category": "插件技能",
+      "categoryEmoji": "🧩",
+      "needDeploy": false,
+      "maintenance": "正在维护",
+      "maintenanceNote": "0 天内有提交",
+      "install": {
+        "installHeading": "## Install",
+        "installSection": "## Install\n\n<img src=\"assets/readme/v3/install.svg\" width=\"1200\" height=\"420\" alt=\"Installing Claude SEO: add the marketplace, install the plugin, 26 skills and 19 agents arrive, /seo setup readies the browser, then /seo audit starts the first level.\" />\n\nYou need [Claude Code](https://claude.com/product/claude-code) 1.0.33 or newer. Run these three commands inside it:\n\n```bash\n/plugin marketplace add AgriciDaniel/claude-seo\n/plugin install claude-seo@agricidaniel-claude-seo\n/seo setup\n```\n\n`/seo setup` prepares everything Claude SEO needs (its own Python environment and a headless browser) without touching the rest of your system. Run `/seo doctor` any time to check it.\n\n<details>\n<summary><b>Manual install: macOS and Linux</b></summary>\n<br />\n\n<img src=\"assets/readme/v3/plat-unix.svg\" width=\"1200\" height=\"260\" alt=\"Manual install: macOS and Linux: the install typed out in a terminal\" />\n\n```bash\ngit clone --depth 1 https://github.com/AgriciDaniel/claude-seo.git\nbash claude-seo/install.sh\n```\n\nOne-liner (curl, review then run):\n\n```bash\ncurl -fsSL https://raw.githubusercontent.com/AgriciDaniel/claude-seo/main/install.sh > install.sh\ncat install.sh        # review before running\nbash install.sh\nrm install.sh\n```\n\n</details>\n\n<details>\n<summary><b>Manual install: Windows (PowerShell)</b></summary>\n<br />\n\n<img src=\"assets/readme/v3/plat-win.svg\" width=\"1200\" height=\"260\" alt=\"Manual install: Windows (PowerShell): the install typed out in a terminal\" />\n\n```powershell\ngit clone --depth 1 https://github.com/AgriciDaniel/claude-seo.git\npowershell -ExecutionPolicy Bypass -File claude-seo\\install.ps1\n```\n\n> **Why `git clone` instead of `irm | iex`?** Claude Code's own security guardrails flag `irm ... | iex` as a supply chain risk: downloading and executing remote code without verification. The `git clone` approach lets you inspect `claude-seo\\install.ps1` before running it.\n\n</details>\n\n> **Two versions.** This public version is MIT licensed and free for everyone. [AI Marketing Hub Pro](https://www.skool.com/ai-marketing-hub-pro) members also get a private version with early access to new features. Members install it with:\n>\n> ```bash\n> /plugin marketplace add AI-Marketing-Hub/claude-seo\n> /plugin install claude-seo@ai-marketing-hub-claude-seo\n> /seo setup\n> ```\n\n**Your first audit:**\n\n```bash\nclaude                                   # start Claude Code\n\n/seo audit https://example.com           # full site audit with a prioritized plan\n/seo page https://exampl",
+        "installCommands": [
+          "> **Why `git clone` instead of `irm | iex`?** Claude Code's own security guardrails flag `irm ... | iex` as a supply chain risk: downloading and executing remote code without verification. The `git clone` approach lets you inspect `claude-seo\\install.ps1` before running it.\n\n</details>\n\n> **Two versions.** This public version is MIT licensed and free for everyone. [AI Marketing Hub Pro](https://www.skool.com/ai-marketing-hub-pro) members also get a private version with early access to new features. Members install it with:\n>\n>",
+          "git clone --depth 1 https://github.com/AgriciDaniel/claude-seo.git\nbash claude-seo/uninstall.sh"
+        ],
+        "intro": " Claude SEO (claude-seo): free, open-source SEO audit plugin for Claude Code by Agrici Daniel. Technical SEO, Core Web Vitals, E-E-A-T, Schema.org, AI search (GEO), local SEO, e-commerce and international SEO. 26 sub-skills and 19 specialist agents. MIT licensed. --> Rank higher in Google and get cited by AI search. **Claude SEO is a free SEO plugin for Claude Code.** Give it any website and it runs a full SEO audit in 10 to 15 minutes, then hands you a clear action plan, sorted by what matters ",
+        "found": true,
+        "source": "api",
+        "readmeLength": 22858
+      }
+    }
+  ],
+  "allParsed": [
+    {
+      "repo": "Nutlope/hallmark",
+      "gain": 12062,
+      "stars": 44714
+    },
+    {
+      "repo": "pbakaus/impeccable",
+      "gain": 12031,
+      "stars": 99194
+    },
+    {
+      "repo": "cloudflare/security-audit-skill",
+      "gain": 11908,
+      "stars": 56235
+    },
+    {
+      "repo": "YuJunZhiXue/dsh-purge",
+      "gain": 6641,
+      "stars": 15307
+    },
+    {
+      "repo": "affaan-m/ECC",
+      "gain": 6380,
+      "stars": 294689
+    },
+    {
+      "repo": "JetBrains/thinkrail",
+      "gain": 5738,
+      "stars": 6943
+    },
+    {
+      "repo": "obra/superpowers",
+      "gain": 5636,
+      "stars": 310559
+    },
+    {
+      "repo": "TauricResearch/TradingAgents",
+      "gain": 5483,
+      "stars": 119465
+    },
+    {
+      "repo": "Leonxlnx/taste-skill",
+      "gain": 4975,
+      "stars": 107652
+    },
+    {
+      "repo": "AgriciDaniel/claude-seo",
+      "gain": 4814,
+      "stars": 25452
+    },
+    {
+      "repo": "thedotmack/claude-mem",
+      "gain": 4575,
+      "stars": 109027
+    },
+    {
+      "repo": "multica-ai/andrej-karpathy-skills",
+      "gain": 4277,
+      "stars": 227940
+    },
+    {
+      "repo": "pingdotgg/t3code",
+      "gain": 3718,
+      "stars": 37533
+    },
+    {
+      "repo": "anthropics/skills",
+      "gain": 2389,
+      "stars": 186294
+    },
+    {
+      "repo": "jakubkrehel/skills",
+      "gain": 1272,
+      "stars": 10009
+    },
+    {
+      "repo": "ghostty-org/ghostty",
+      "gain": 556,
+      "stars": 63165
+    }
+  ],
+  "enrichedAt": "2026-11-01T20:25:44.033Z",
+  "readmeAt": "2026-11-01T20:25:45.771Z"
+}
