@@ -67,15 +67,25 @@ jobs:
           TODAY=$(TZ='Asia/Shanghai' date '+%d')
           echo "今天: $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M')，明天是 ${TOMORROW} 号"
 
+          # ★ 为什么允许 1 号也跑：
+          #   cron "0 1 28-31" 在 28~31 号每天都触发，本意是让「月末最后一天」
+          #   早上 9 点推送一次。但月末是 28/29/30/31 不定，所以这个 cron 在
+          #   月末次日的 1 号仍然会触发一次。
+          #   旧逻辑只看「明天是不是 1 号」，导致 1 号当天的 cron 全被 gate 跳过，
+          #   月报一旦在月末当天失败，第二天连重试的机会都没有。
+          #   现在：月末最后一日 ✅ 或 月初 1 号（补跑窗口）✅ 都放行。
           if [ "$FORCE" = "true" ]; then
             echo "run=true" >> $GITHUB_OUTPUT
             echo "强制运行"
           elif [ "$TOMORROW" = "01" ]; then
             echo "run=true" >> $GITHUB_OUTPUT
             echo "✅ 今天是本月最后一日，继续"
+          elif [ "$TODAY" = "01" ]; then
+            echo "run=true" >> $GITHUB_OUTPUT
+            echo "✅ 今天是月初 1 号（上月月报补跑窗口），继续"
           else
             echo "run=false" >> $GITHUB_OUTPUT
-            echo "⏭ 今天不是月末，跳过"
+            echo "⏭ 今天不是月末也不是 1 号，跳过"
           fi
 
       - name: 判断执行阶段
@@ -96,6 +106,28 @@ jobs:
             # 手动/其它触发：整条链路跑完
             echo "stage=all" >> $GITHUB_OUTPUT
           fi
+
+          # ★ 自愈：定时阶段如果发现上游产物不存在（例如月末那次抓取失败），
+          #   就把阶段升级成 all，当场把缺失的前置步骤补齐，而不是白白失败一天。
+          #   月报的窗口每月只有一次，错过了就要等下个月。
+          case "$SCHED" in
+            "0 23 27-31 * *") NEED="data/monthly" ;;
+            "0 1 28-31 * *")  NEED="月总结" ;;
+            *)                 NEED="" ;;
+          esac
+          CUR=$(grep -oP '(?<=^stage=).*' $GITHUB_OUTPUT | tail -1)
+          if [ -n "$NEED" ] && [ "$CUR" != "all" ]; then
+            FOUND=0
+            ls $NEED/*.json >/dev/null 2>&1 && FOUND=1
+            ls $NEED/*.md   >/dev/null 2>&1 && FOUND=1
+            if [ "$FOUND" = "0" ]; then
+              echo "⚠️  定时阶段 '$CUR' 发现 $NEED 下无上游产物，自动升级为 all 补齐"
+              sed -i '/^stage=/d' $GITHUB_OUTPUT
+              echo "stage=all" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+          echo "最终阶段: $(grep -oP '(?<=^stage=).*' $GITHUB_OUTPUT | tail -1)"
           echo "北京时间: $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')"
 
       # ---------- 抓取 ----------
