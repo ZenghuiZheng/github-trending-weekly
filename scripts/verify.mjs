@@ -214,6 +214,41 @@ for (const it of data.items) {
     legalNumbers.add(ratio.toFixed(0));
   }
 }
+
+// ★ 从「文本字段」提取数字并加入白名单
+//   为什么需要：SKILL.md 允许 LLM 引用 README / desc 里的内容，
+//   例如 VoiceStudio 的 desc 写「in 646 languages」，报告就会写「支持 646 种语言」。
+//   但旧校验器只从 gain/stars/forks/openIssues 取数，文本里的数字全被判为“编造”，
+//   于是只要模型老实引用 README 就会被拦住
+//   （2026-10 月报就是卡在这：646、123，导致月报发不出去）。
+//   现在把传给 LLM 的全部文本也扫一遍，只取其中真实存在的数字。
+const TEXT_FIELDS = ["desc", "topicsLine", "lang", "category", "maintenanceNote", "license", "createdAt", "pushedAt"];
+for (const it of data.items) {
+  const texts = [];
+  for (const k of TEXT_FIELDS) {
+    if (typeof it[k] === "string") texts.push(it[k]);
+  }
+  texts.push(...(it.topics || []));
+  // install 里的是 README 原文，LLM 被明确允许引用
+  if (it.install) {
+    for (const k of ["intro", "installSection", "installHeading"]) {
+      if (typeof it.install[k] === "string") texts.push(it.install[k]);
+    }
+    texts.push(...(it.install.installCommands || []));
+  }
+  texts.push(it.repo || "");
+
+  for (const t of texts) {
+    // 原文里的每个数字都算合法（包括带逗号的写法）
+    for (const m of String(t).matchAll(/\d[\d,]*(?:\.\d+)?/g)) {
+      const raw = m[0];
+      legalNumbers.add(raw);
+      legalNumbers.add(raw.replace(/,/g, ""));
+      legalNumbers.add(raw.replace(/[,.]+$/, ""));
+    }
+  }
+}
+
 // 允许的其它数字：年份、日期、阈值、条数等
 const seed = [
   String(data.threshold), String(data.totalParsed), String(data.passedCount),
