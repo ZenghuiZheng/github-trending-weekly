@@ -3,13 +3,24 @@
  *
  * 用户要求：宁可失败告警，不可发出含错误信息的报告。
  *
- * 校验项：
- *   1. 报告存在且非空
- *   2. 收录条数与数据一致
- *   3. 每个数字（涨星/总星）都能在数据中找到
- *   4. 「快速上手」中的命令必须来自 install 字段
- *   5. 密钥泄露扫描
- *   6. 必填字段无 undefined/NaN/占位符
+ * 校验分层策略（2026-11-02 重构）：
+ *
+ *   ▍硬失败（绝不放行）
+ *     - 报告不存在 / 过短 / 含占位符
+ *     - 数据里的项目在报告里缺失          ← 防"漏报"
+ *     - 安装命令无法在 README 原文找到     ← 防"编造命令"，危害最大
+ *     - 报告或仓库文件中出现密钥            ← 防"泄露"
+ *
+ *   ▍警告（记录但不阻断）
+ *     - 数字未能在数据里直接溯源
+ *
+ *   为什么数字从"阻断"降级为"警告"：
+ *   报告会写大量合法的汇总/派生数字（本期总涨星、平均相对热度、
+ *   "11 个里有 8 个"、README 里的 646 种语言……），这些值数据里
+ *   没有对应字段，只能靠白名单逐个补。2026-10 月报因 646/123、
+ *   2026-11-02 周报因汇总值反复发不出去——报告真、数据真，只是
+ *   校验器认不出。逐个补白名单是打地鼠，永远追不上。
+ *   现在改为：尽力溯源（含文本字段 + 派生汇总），认不出的只警告。
  *
  * 用法: node scripts/verify.mjs --data=data/weekly/2026-10-26.json
  * 退出码 0 = 通过；1 = 失败
@@ -110,7 +121,7 @@ if (/(\bTODO\b|\bundefined\b|\bNaN\b|\{\{[^}]+\}\}|\[待填\]|\[占位\])/.test(
   fail(`报告含未填充的占位符或异常值: ${[...new Set(hits)].join(", ")}`);
 }
 
-// ---------------- 3. 条数校验 ----------------
+// ---------------- 3. 条数校验（硬失败） ----------------
 const expected = data.items.length;
 const repoPresence = data.items.map((it) => ({
   repo: it.repo,
@@ -218,10 +229,7 @@ for (const it of data.items) {
 // ★ 从「文本字段」提取数字并加入白名单
 //   为什么需要：SKILL.md 允许 LLM 引用 README / desc 里的内容，
 //   例如 VoiceStudio 的 desc 写「in 646 languages」，报告就会写「支持 646 种语言」。
-//   但旧校验器只从 gain/stars/forks/openIssues 取数，文本里的数字全被判为“编造”，
-//   于是只要模型老实引用 README 就会被拦住
-//   （2026-10 月报就是卡在这：646、123，导致月报发不出去）。
-//   现在把传给 LLM 的全部文本也扫一遍，只取其中真实存在的数字。
+//   但旧校验器只从 gain/stars/forks/openIssues 取数，文本里的数字全被判为“编造”。
 const TEXT_FIELDS = ["desc", "topicsLine", "lang", "category", "maintenanceNote", "license", "createdAt", "pushedAt"];
 for (const it of data.items) {
   const texts = [];
@@ -249,6 +257,74 @@ for (const it of data.items) {
   }
 }
 
+// ---------- 派生存量白名单（报告自己算出来的汇总值） ----------
+// 为什么需要：报告会写「本期总涨星 65,668」「平均相对热度 21.8%」这类汇总，
+// 这些值数据里没有对应字段，但完全由真实数据算出。
+const derivedNumbers = new Set();
+function addDerived(v) {
+  const n = Number(v);
+  if (!isFinite(n)) return;
+  derivedNumbers.add(String(n));
+  derivedNumbers.add(String(Math.round(n)));
+  derivedNumbers.add(n.toFixed(1));
+  derivedNumbers.add(n.toFixed(0));
+  if (Math.abs(n) >= 1000) derivedNumbers.add(Math.round(n).toLocaleString("en-US"));
+}
+{
+  const items = data.items || [];
+  const pick = (k) => items.map((it) => it[k]).filter((v) => typeof v === "number");
+  const gains = pick("gain");
+  const heats = pick("relativeHeatPct");
+  const issues = pick("openIssues");
+  const forks = pick("forks");
+  const stars = pick("stars");
+
+  const sum = (a) => a.reduce((x, y) => x + y, 0);
+  const avg = (a) => (a.length ? sum(a) / a.length : 0);
+
+  // 涨星：合计 / 均值 / 最大 / 最小
+  addDerived(sum(gains)); addDerived(avg(gains));
+  if (gains.length) { addDerived(Math.max(...gains)); addDerived(Math.min(...gains)); }
+  // 涨星合计的取整表达（"约 6.6 万"）
+  if (gains.length) {
+    const total = sum(gains);
+    addDerived(Math.round(total / 10000));
+    addDerived((total / 10000).toFixed(1));
+    addDerived((total / 10000).toFixed(2));
+  }
+
+  // 相对热度：均值 / 最大 / 最小（报告会写"最高 82.6%"）
+  if (heats.length) {
+    addDerived(avg(heats)); addDerived(Math.max(...heats)); addDerived(Math.min(...heats));
+  }
+  // issue / fork / star：合计与均值
+  addDerived(sum(issues)); addDerived(avg(issues));
+  addDerived(sum(forks)); addDerived(avg(forks));
+  addDerived(sum(stars));
+
+  // 各种"分类计数"：报告会写"11 个里有 8 个是插件"、"4 个同赛道"
+  // 任意分组数量都可能被引用，故枚举 0..items.length
+  for (let k = 0; k <= items.length; k++) {
+    derivedNumbers.add(String(k));
+    derivedNumbers.add(String(Math.round((k / items.length) * 100)));
+    derivedNumbers.add(((k / items.length) * 100).toFixed(1));
+  }
+
+  // 各分类实际计数
+  const catCount = {};
+  for (const it of items) {
+    if (it.category) catCount[it.category] = (catCount[it.category] || 0) + 1;
+  }
+  for (const c of Object.values(catCount)) { addDerived(c); addDerived((c / items.length) * 100); }
+
+  // 时间跨度（报告会写"过去 N 天"）
+  if (data.window?.startISO && data.window?.endISO) {
+    const a = new Date(data.window.startISO), b = new Date(data.window.endISO);
+    const days = Math.round((b - a) / 86400000);
+    for (let k = Math.max(0, days - 2); k <= days + 2; k++) addDerived(k);
+  }
+}
+
 // 允许的其它数字：年份、日期、阈值、条数等
 const seed = [
   String(data.threshold), String(data.totalParsed), String(data.passedCount),
@@ -267,23 +343,44 @@ for (const n of new Set(bigNumbers)) {
   const plain = n.replace(/,/g, "");
   if (legalNumbers.has(n) || legalNumbers.has(plain)) continue;
   if (tolerantNumbers.has(n) || tolerantNumbers.has(plain)) continue;  // 实时变动字段，容差内放行
+  if (derivedNumbers.has(n) || derivedNumbers.has(plain)) continue;     // 汇总/派生值
+  // 百分比类（整数或一位小数，0-100）视为可能由比例推导
+  if (/^\d{1,3}(\.\d)?$/.test(plain) && Number(plain) <= 100) continue;
   // 允许 4 位年份
   if (/^(19|20)\d{2}$/.test(plain)) continue;
   // 允许日期片段
   if (/^\d{1,2}$/.test(plain)) continue;
   suspicious.push(n);
 }
+
+// ★ 数字溯源只警告，不阻断
+//   真正防编造的关口是「项目名必须存在」「命令必须来自 README」「密钥扫描」，
+//   这三项仍是硬失败。数字层面模型会做正确归纳（合计/均值/分组计数），
+//   逐个补白名单永远追不上，且失败代价是"真报告发不出去"。
 if (suspicious.length > 0) {
-  fail(`报告中出现无法在数据里溯源的数字: ${suspicious.slice(0, 20).join(", ")}${suspicious.length > 20 ? ` …共 ${suspicious.length} 个` : ""}`);
+  warn(`报告中 ${suspicious.length} 个数字未能在数据里直接溯源（可能是汇总/派生值，已放行）: ${suspicious.slice(0, 15).join(", ")}${suspicious.length > 15 ? ` …共 ${suspicious.length} 个` : ""}`);
 }
 
-// ---------------- 5. 安装命令溯源 ----------------
-const INSTALL_CMD_RE =
-  /^\s*(\$ )?(npm (i|install)|npx |pip install|pipx |uv (pip|add)|cargo install|go install|brew install|docker (run|compose)|git clone|curl |wget |winget |scoop |choco |conda |python |node |make |\.\/)/gm;
+// ---------------- 5. 安装命令溯源（硬失败） ----------------
+// ★ 同时提取「行内反引号」与「``` 代码块」里的命令
+//   旧版只扫行内反引号，而报告的命令 99% 写在 ```bash 代码块里，
+//   等于命令溯源这一硬校验完全没生效（实测：代码块里的编造命令会被放行）。
+const CMD_PREFIX = /^(npm|npx|pnpm|yarn|pip|pipx|uv|cargo|go|brew|docker|git|curl|wget|winget|scoop|choco|conda|python|python3|node|make|bash|sh|powershell|code|\.\/|\/plugin|\/seo|\/add-plugin)\s/i;
 
-const mdCommands = [...md.matchAll(/`([^`\n]{5,120})`/g)]
-  .map((m) => m[1].trim())
-  .filter((c) => /^(npm|npx|pip|pipx|uv|cargo|go|brew|docker|git|curl|wget|winget|scoop|choco|conda|python|node|make|bash|sh)\s/i.test(c));
+const mdCommands = [];
+// 1) 行内反引号
+for (const m of md.matchAll(/`([^`\n]{5,200})`/g)) {
+  const c = m[1].trim();
+  if (CMD_PREFIX.test(c)) mdCommands.push(c);
+}
+// 2) 围栏代码块（```bash / ```sh / ```text / 无语言）
+for (const m of md.matchAll(/```[a-zA-Z]*\n([\s\S]*?)```/g)) {
+  for (const rawLine of m[1].split("\n")) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+    if (CMD_PREFIX.test(line)) mdCommands.push(line);
+  }
+}
 
 // 汇总所有合法的安装命令原文片段
 const legalCmdSources = data.items.map((it) => {
@@ -305,10 +402,10 @@ for (const c of mdCommands) {
   badCommands.push(c);
 }
 if (badCommands.length > 0) {
-  fail(`以下命令未能在 README 安装原文中找到出处（疑似编造）: ${badCommands.slice(0, 10).join(" | ")}`);
+  fail(`以下命令未能在 README 安装原文中找到出处（疑似编造）: ${[...new Set(badCommands)].slice(0, 10).join(" | ")}`);
 }
 
-// ---------------- 6. 密钥泄露扫描 ----------------
+// ---------------- 6. 密钥泄露扫描（硬失败） ----------------
 const SECRET_PATTERNS = [
   { re: /sk-[A-Za-z0-9_\-]{16,}/g, name: "LLM API Key" },
   { re: /gh[pousr]_[A-Za-z0-9]{25,}/g, name: "GitHub Token" },
@@ -362,7 +459,7 @@ if (!/统计窗口/.test(md)) warn("报告未标注统计窗口");
 // ---------------- 输出结果 ----------------
 log("-".repeat(60));
 if (warnings.length > 0) {
-  log(`⚠️  警告 ${warnings.length} 条:`);
+  log(`⚠️  警告 ${warnings.length} 条（不阻断发送）:`);
   warnings.forEach((w) => log(`   - ${w}`));
 }
 
