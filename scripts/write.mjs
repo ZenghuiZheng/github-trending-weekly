@@ -59,6 +59,9 @@ function buildUserPrompt(data) {
     标签: it.topicsLine || "（无）",
     README开头: it.install?.intro || "（未获取）",
     本周涨星: it.gain,
+    涨星口径: it.gainEstimated
+      ? "按日均速率推算的估算值（首次运行无历史基线）"
+      : (it.gainMethod === "new-repo" ? "本期新建项目，总星即本期所得" : "与上期快照差分的实测值"),
     总星: it.stars,
     相对热度: it.relativeHeatPct != null ? `${it.relativeHeatPct}%` : "无法计算",
     创建时间: it.createdAt || "未知",

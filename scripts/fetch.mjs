@@ -17,8 +17,9 @@ import {
   ROOT, log, logErr, todayCN, weekWindowCN, monthWindowCN,
   writeJSON, writeText, num, readJSON,
 } from "./lib/common.mjs";
-// ★ 必须用带多源回退的抓取器：直接 fetch github.com 在 CI 上偶发超时
-import { fetchTrendingHTML } from "./lib/fetcher.mjs";
+// ★ trending HTML 在很多网络出口会直接连接超时；改用官方 Search API 作为主源
+import { fetchTrendingHTML, fetchTrendingViaSearchAPI } from "./lib/fetcher.mjs";
+import { loadConfig } from "./lib/config.mjs";
 
 const args = process.argv.slice(2);
 const since = (args.find((a) => a.startsWith("--since="))?.split("=")[1]) || "weekly";
@@ -35,7 +36,6 @@ const CONFIG = {
 };
 
 const cfg = CONFIG[since];
-const URL_TRENDING = `https://github.com/trending?since=${since}`;
 
 // ---------------- 解析 ----------------
 export function parseTrending(html, periodLabel) {
@@ -73,32 +73,141 @@ export function parseTrending(html, periodLabel) {
   return items;
 }
 
+// ---------------- 上期快照（差分基线） ----------------
+/**
+ * 读上一期的 data/<since>/*.json，建立 repo → 当时总星 的映射。
+ * 用于 Search API 模式下回算“本期涨星”。
+ *
+ * 注意：这里按 dateKey 排序取“上一期”（严格小于今天），不按 mtime。
+ */
+function loadPreviousStars(since, todayISO) {
+  const dir = path.join(ROOT, "data", since);
+  const map = new Map();
+  let names = [];
+  try {
+    names = fs.readdirSync(dir)
+      .filter((n) => n.endsWith(".json"))
+      .map((n) => ({ n, key: n.replace(/\.json$/, "") }))
+      .filter((x) => x.key < todayISO)          // 只要更早的
+      .sort((a, b) => (a.key < b.key ? 1 : -1)); // 最近的在前
+  } catch {
+    return map;
+  }
+
+  if (!names.length) {
+    log("⚠️  没有可用上期快照（首次运行），只能用“本期新建项目”估算涨星");
+    return map;
+  }
+
+  // 取最近的一期作基线（只取一期，不合并，避免跨周重复计算）
+  const base = readJSON(path.join(dir, names[0].n), null);
+  if (!base?.items?.length) {
+    log(`⚠️  上期快照 ${names[0].n} 无有效 items，忽略`);
+    return map;
+  }
+
+  for (const it of base.items) {
+    if (it.repo && typeof it.stars === "number") map.set(it.repo, it.stars);
+  }
+  // allParsed 里的数据也一并纳入（上一期没进前 10 但这次可能进）
+  for (const it of base.allParsed || []) {
+    if (it.repo && typeof it.stars === "number" && !map.has(it.repo)) {
+      map.set(it.repo, it.stars);
+    }
+  }
+
+  log(`差分基线: ${names[0].n}（${map.size} 个仓库的总星）`);
+  return map;
+}
+
 // ---------------- 主流程 ----------------
 async function main() {
   const dateInfo = todayCN();
-  log(`开始抓取 ${URL_TRENDING}（${dateInfo.iso}）`);
+  const cfgAll = loadConfig();
+  const token = cfgAll.githubToken;
+  const window = since === "weekly" ? weekWindowCN() : monthWindowCN();
 
-  // 多源回退（官方 → 镜像），单源内多次重试；全部失败才抛错
-  const { html, source } = await fetchTrendingHTML(since);
-  log(`抓取成功，实际使用源: ${source}`);
+  log(`开始抓取（${dateInfo.iso}，窗口 ${window.startISO} → ${window.endISO}）`);
 
-  // 原始 HTML 留档
-  const snapPath = path.join(ROOT, "snapshots", `${since}-${dateInfo.iso}.html`);
-  writeText(snapPath, html);
-  log(`原始 HTML 已留档: ${path.relative(ROOT, snapPath)} (${(html.length / 1024).toFixed(1)} KB)`);
+  // ── 主源：Search API（稳定；带 token 配额充足）──
+  let all = [];
+  let usedSource = "";
+  let snapRel = null;
 
-  const periodLabel = since === "weekly" ? "stars this week" : since === "monthly" ? "stars this month" : "stars today";
-  const all = parseTrending(html, periodLabel);
+  try {
+    const r = await fetchTrendingViaSearchAPI({
+      since,
+      startISO: window.startISO,
+      token,
+    });
+    all = r.items;
+    usedSource = r.source;
+    log(`✅ 主源（Search API）成功，候选 ${all.length} 个`);
+  } catch (e) {
+    logErr(`主源 Search API 失败: ${e.message}`);
+    log("  尝试备用源 trending HTML（成功率较低，仅当官方页面可访问时有效）...");
 
-  if (all.length === 0) {
-    throw new Error("解析出 0 个项目 —— GitHub 页面结构可能已变更，请检查 parseTrending()");
+    const { html, source } = await fetchTrendingHTML(since);
+    usedSource = source;
+    const snapPath = path.join(ROOT, "snapshots", `${since}-${dateInfo.iso}.html`);
+    writeText(snapPath, html);
+    snapRel = path.relative(ROOT, snapPath);
+    log(`原始 HTML 已留档: ${snapRel} (${(html.length / 1024).toFixed(1)} KB)`);
+
+    const periodLabel = since === "weekly" ? "stars this week"
+      : since === "monthly" ? "stars this month" : "stars today";
+    all = parseTrending(html, periodLabel);
   }
 
+  if (all.length === 0) {
+    throw new Error("两个抓取源都未返回项目 —— 请检查 token / 网络 / GitHub 页面结构");
+  }
+
+  // ★ 计算“本期涨星”（Search API 不提供该字段）
+  //    · 本期新建的项目：总星即本期所得
+  //    · 老项目：与上一期快照差分
+  const prevStars = loadPreviousStars(since, dateInfo.iso);
+  for (const it of all) {
+    if (it.gain > 0) continue; // HTML 源已自带涨星
+    const before = prevStars.get(it.repo);
+    if (before != null) {
+      it.gain = Math.max(0, it.stars - before);
+      it.gainMethod = "snapshot-diff";
+    } else if (it.createdInWindow) {
+      // 本期新建：全部 star 都是本期所得
+      it.gain = it.stars;
+      it.gainMethod = "new-repo";
+    } else if (it._ageDays && it._ageDays > 0) {
+      // 无基线时，用“总星 / 项目年龄”估算本期均值（明确标记为估算）
+      const perDay = it.stars / it._ageDays;
+      const winDays = since === "weekly" ? 7 : 30;
+      it.gain = Math.max(0, Math.round(perDay * winDays));
+      it.gainMethod = "estimated-rate";
+    } else {
+      it.gain = 0;
+      it.gainMethod = "unknown";
+    }
+    it.gainEstimated = it.gainMethod === "estimated-rate" || it.gainMethod === "unknown";
+  }
+
+  const withGain = all.filter((x) => x.gain > 0);
+  if (withGain.length === 0) {
+    throw new Error(
+      `所有候选都无法计算本期涨星（共 ${all.length} 个）。\n` +
+      `  需要上一期 data/${since}/*.json 作为差分基线；若基线被删，本期算不出增量。`
+    );
+  }
+  withGain.sort((a, b) => b.gain - a.gain);
+
   // 阈值过滤 + 截断
-  const passed = all.filter((x) => x.gain >= cfg.minGain);
+  const passed = withGain.filter((x) => x.gain >= cfg.minGain);
   const top = passed.slice(0, cfg.max);
 
-  const window = since === "weekly" ? weekWindowCN() : monthWindowCN();
+  if (top.length === 0) {
+    throw new Error(
+      `没有项目达到涨星阈值 ${cfg.minGain}（本期最高 ${withGain[0]?.gain ?? 0}）。`
+    );
+  }
 
   const payload = {
     version: 1,
@@ -107,8 +216,8 @@ async function main() {
     capturedAtCN: new Date(Date.now() + 8 * 3600 * 1000).toISOString().replace("T", " ").slice(0, 19),
     dateKey: dateInfo.iso,
     window,
-    source: URL_TRENDING,
-    snapshotFile: path.relative(ROOT, snapPath),
+    source: usedSource,
+    snapshotFile: snapRel,
     threshold: cfg.minGain,
     maxItems: cfg.max,
     totalParsed: all.length,
