@@ -10,7 +10,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { ROOT, log, logErr, readJSON, writeText } from "./lib/common.mjs";
+import { ROOT, log, logErr, readJSON, writeText, requireCurrentData, assertCurrentPeriod } from "./lib/common.mjs";
 import { loadConfig, reportConfigHealth } from "./lib/config.mjs";
 import { renderAll } from "./render.mjs";
 import { htmlToPDF } from "./pdf.mjs";
@@ -20,30 +20,39 @@ import { execFileSync } from "node:child_process";
 
 const args = process.argv.slice(2);
 const dataArg = args.find((a) => a.startsWith("--data="))?.split("=")[1];
+const docsArg = args.find((a) => a.startsWith("--monthly"));
 const skipIM = args.includes("--no-im");
 const dryRun = args.includes("--dry-run");
 
-function pickLatest() {
-  let best = null, bestT = 0;
-  for (const sub of ["weekly", "monthly"]) {
-    const dir = path.join(ROOT, "data", sub);
-    let names = [];
-    try { names = fs.readdirSync(dir).filter((n) => n.endsWith(".json")); } catch { continue; }
-    for (const n of names) {
-      const p = path.join(dir, n), t = fs.statSync(p).mtimeMs;
-      if (t > bestT) { bestT = t; best = p; }
-    }
-  }
-  return best;
+/**
+ * 选定要推送的数据文件
+ *
+ * ★ 设计原则（用户明确要求）：**没有兜底**
+ *   显式 --data 优先；否则按「本期」精确定位（data/<since>/<今天>.json）。
+ *   本期数据不存在 → 直接报错，绝不按 mtime 回退到上一期。
+ *
+ * 旧 bug：pickLatest/pickPending 按 mtime 挑“最新带报告的文件”，
+ *   在 capture 失败的周会直接捧回上一期旧数据，把旧报告再推一遍。
+ */
+function resolveDataFile() {
+  if (dataArg) return path.isAbsolute(dataArg) ? dataArg : path.join(ROOT, dataArg);
+  const since = docsArg ? "monthly" : "weekly";
+  return requireCurrentData(since).path;
 }
 
 async function main() {
-  const dataFile = dataArg ? path.join(ROOT, dataArg) : pickLatest();
+  // 月报 workflow 会传 --monthly，避免误推周报
+  const since = docsArg ? "monthly" : null;
+  const dataFile = resolveDataFile();
   if (!dataFile) throw new Error("未找到数据文件");
 
   const data = readJSON(dataFile);
   const cfg = loadConfig();
   const isMonthly = data.since === "monthly";
+
+  // ★ 硬闸门：必须是本期数据，否则就是把上一期报告再推一遍
+  const relData = path.relative(ROOT, dataFile);
+  assertCurrentPeriod(data, relData);
 
   log("=".repeat(64));
   log(`开始发送流程（${isMonthly ? "月报" : "周报"} · ${path.basename(dataFile)}）`);
@@ -52,7 +61,6 @@ async function main() {
 
   // ---------- 步骤1：校验 ----------
   log("[1/5] 校验报告...");
-  const relData = path.relative(ROOT, dataFile);
   try {
     execFileSync(process.execPath, [path.join(ROOT, "scripts", "verify.mjs"), `--data=${relData}`], {
       stdio: "inherit",
@@ -63,7 +71,9 @@ async function main() {
     logErr("校验失败，终止发送");
     await sendAlert(
       "报告校验未通过，本期报告未发送",
-      `数据文件: ${relData}\n\n详见日志: logs/${new Date().toISOString().slice(0, 10)}.log\n\n可能原因：\n` +
+      `数据文件: ${relData}\n\n详见日志: logs/${new Date().toISOString().slice(0, 10)}.log\n\n` +
+      `第一步先看 verify 的真实输出（上方日志），不要猜。常见原因：\n` +
+      `· 报告文件不存在（write 阶段失败/未运行，或文件名与 window 不匹配）\n` +
       `· 报告中出现了数据里没有的数字（LLM 编造）\n` +
       `· 安装命令不在 README 原文中\n` +
       `· 有项目缺失或占位符未填充\n` +
@@ -100,9 +110,7 @@ async function main() {
   const dateKey = isMonthly ? `${data.window.year}年${data.window.month}月` : `${data.window.startISO} ~ ${data.window.endISO}`;
   const subject = `[GitHub ${isMonthly ? "月" : "周"}榜] ${dateKey} · ${data.items.length} 个项目`;
 
-  const mdText = (() => {
-    try { return fs.readFileSync(path.join(ROOT, data.reportPath), "utf8"); } catch { return ""; }
-  })();
+  const mdText = fs.readFileSync(path.join(ROOT, data.reportPath), "utf8");
 
   const html = fs.readFileSync(htmlPath, "utf8");
 

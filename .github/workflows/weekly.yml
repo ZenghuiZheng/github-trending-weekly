@@ -83,8 +83,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
         run: |
           node scripts/fetch.mjs --since=weekly
-          node scripts/enrich.mjs
-          node scripts/readme.mjs
+          node scripts/enrich.mjs --since=weekly
+          node scripts/readme.mjs --since=weekly
 
       # ---------- 阶段 2：撰写 ----------
       - name: 调用 LLM 撰写报告
@@ -93,7 +93,15 @@ jobs:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
         run: |
-          node scripts/write.mjs
+          # ★ 按「本期」精确定位：data/weekly/<今天北京日期>.json，无兜底
+          TODAY=$(TZ='Asia/Shanghai' date +%Y-%m-%d)
+          DATA="data/weekly/$TODAY.json"
+          if [ ! -f "$DATA" ]; then
+            echo "::error::本期数据不存在: $DATA（capture 阶段失败，不能用上一期数据写报告）"
+            exit 1
+          fi
+          echo "使用数据: $DATA"
+          node scripts/write.mjs --file="$DATA"
 
       # ---------- 阶段 3：校验 + 推送 ----------
       - name: 校验并推送报告
@@ -114,10 +122,19 @@ jobs:
         run: |
           FLAGS=""
           if [ "${{ github.event.inputs.skip_im }}" = "true" ]; then FLAGS="--no-im"; fi
-          node scripts/deliver.mjs $FLAGS
+          # ★ 按「本期」精确定位，无兜底
+          TODAY=$(TZ='Asia/Shanghai' date +%Y-%m-%d)
+          DATA="data/weekly/$TODAY.json"
+          if [ ! -f "$DATA" ]; then
+            echo "::error::本期数据不存在: $DATA（capture/write 阶段未成功，拒绝推送旧内容）"
+            exit 1
+          fi
+          echo "使用数据: $DATA"
+          node scripts/deliver.mjs --data="$DATA" $FLAGS
 
       # ---------- 安全：提交前扫描密钥 ----------
       - name: 密钥泄露扫描
+        if: always()
         run: |
           echo "扫描仓库中的疑似密钥..."
           HIT=0
@@ -136,7 +153,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add 周总结/ 月总结/ data/ preview/ 2>/dev/null || git add 周总结/ data/
+          git add 周总结/ 月总结/ data/ 2>/dev/null || git add 周总结/ data/
           if git diff --staged --quiet; then
             echo "无变更，跳过提交"
           else

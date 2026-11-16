@@ -8,27 +8,21 @@
  */
 
 import path from "node:path";
-import { ROOT, log, logErr, readJSON, writeJSON } from "./lib/common.mjs";
+import { ROOT, log, logErr, readJSON, writeJSON, requireCurrentData, die } from "./lib/common.mjs";
 import { fetchReadme } from "./lib/fetcher.mjs";
 import { loadConfig } from "./lib/config.mjs";
 
 const args = process.argv.slice(2);
-const file = args.find((a) => a.startsWith("--file="))?.split("=")[1] || pickLatest();
+const fileArg = args.find((a) => a.startsWith("--file="))?.split("=")[1];
+const sinceArg = args.find((a) => a.startsWith("--since="))?.split("=")[1];
 
-import fs from "node:fs";
-function pickLatest() {
-  let best = null, bestT = 0;
-  for (const sub of ["weekly", "monthly"]) {
-    const dir = path.join(ROOT, "data", sub);
-    let names = [];
-    try { names = fs.readdirSync(dir).filter((n) => n.endsWith(".json")); } catch { continue; }
-    for (const n of names) {
-      const p = path.join(dir, n), t = fs.statSync(p).mtimeMs;
-      if (t > bestT) { bestT = t; best = p; }
-    }
-  }
-  return best;
-}
+// ★ 无 --file 时按「本期」精确定位，绝不按 mtime 取"最新"
+let file;
+try {
+  file = fileArg
+    ? (path.isAbsolute(fileArg) ? fileArg : path.join(ROOT, fileArg))
+    : requireCurrentData(sinceArg || "weekly").path;
+} catch (e) { die(e); }
 
 /**
  * 从 README 正文中截取安装/快速开始段落

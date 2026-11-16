@@ -12,27 +12,17 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { ROOT, log, logErr, readJSON, writeText, ensureDir, lastDayOf } from "./lib/common.mjs";
+import { ROOT, log, logErr, readJSON, writeText, ensureDir, lastDayOf, monthFileBase, weekFileBase, requireCurrentData, die } from "./lib/common.mjs";
 
 const args = process.argv.slice(2);
 const dataArg = args.find((a) => a.startsWith("--data="))?.split("=")[1];
+const sinceArg = args.find((a) => a.startsWith("--since="))?.split("=")[1];
 const quiet = args.includes("--quiet");
 
-const dataFile = dataArg ? path.join(ROOT, dataArg) : pickLatest();
-
-function pickLatest() {
-  let best = null, bestT = 0;
-  for (const sub of ["weekly", "monthly"]) {
-    const dir = path.join(ROOT, "data", sub);
-    let names = [];
-    try { names = fs.readdirSync(dir).filter((n) => n.endsWith(".json")); } catch { continue; }
-    for (const n of names) {
-      const p = path.join(dir, n), t = fs.statSync(p).mtimeMs;
-      if (t > bestT) { bestT = t; best = p; }
-    }
-  }
-  return best;
-}
+let dataFile;
+try {
+  dataFile = dataArg ? path.join(ROOT, dataArg) : requireCurrentData(sinceArg || "weekly").path;
+} catch (e) { die(e); }
 
 // ---------------- Markdown 解析 ----------------
 /**
@@ -66,6 +56,10 @@ export function parseReport(md) {
     buf = [];
   };
 
+  // ★ 趋势区状态机：只采集第一个一级小节（本期趋势 / 本月趋势）的正文，
+  //   旧逻辑会把 Top3 深度点评 / 连续霸榜 / 完整榜单的正文也拼进趋势里
+  let trendHeadingSeen = false;
+
   for (; i < lines.length; i++) {
     const line = lines[i];
 
@@ -87,22 +81,36 @@ export function parseReport(md) {
 
     if (cur) {
       buf.push(line);
-    } else {
-      // 还在前言部分（趋势点评等）
-      if (line.startsWith("## ") && !/完整榜单|Top\s*3/i.test(line)) {
-        out.trendHeading = line.replace(/^##\s*/, "");
-      }
-      if (out.trendHeading && line.trim() && !line.startsWith("#") && !line.startsWith(">") && !/^-{3,}$/.test(line.trim())) {
-        out.trendText += line + "\n";
-      }
+      continue;
     }
+
+    // ---- 以下为“前文区”（还没遇到第一个 ### 编号小节） ----
+    if (line.startsWith("## ")) {
+      const heading = line.replace(/^##\s*/, "").trim();
+      if (!trendHeadingSeen && !/完整榜单|Top\s*3|深度点评|连续霸榜/i.test(heading)) {
+        // 第一个一级小节 = 趋势点评，采集它
+        trendHeadingSeen = true;
+        out.trendHeading = heading;
+      } else {
+        // 后续小节（Top3 / 连续霸榜 / 完整榜单…）一律停止采集
+        out.trendHeading = out.trendHeading || heading;
+        trendHeadingSeen = true;
+        out.trendDone = true;
+      }
+      continue;
+    }
+    if (!trendHeadingSeen || out.trendDone) continue;
+    if (line.startsWith("#") || line.startsWith(">") || /^-{3,}$/.test(line.trim())) continue;
+    if (line.trim()) out.trendText += line + "\n";
   }
   flushBuf();
   if (cur) out.items.push(cur);
 
-  // 从 meta 或正文里提取趋势（周报格式：## 本期趋势）
+  out.trendText = out.trendText.trim();
+
+  // 若上面的状态机没抽到内容，回退到正则抓取
   if (!out.trendText) {
-    const tm = md.match(/##\s*(本期趋势|本月趋势)\s*\n+([\s\S]*?)(?=\n##\s|\n###\s|$)/);
+    const tm = md.match(/##\s*(本期趋势|本月趋势|月度趋势)\s*\n+([\s\S]*?)(?=\n##\s|\n###\s|$)/);
     if (tm) out.trendText = tm[2].trim();
   }
 
@@ -331,7 +339,7 @@ export function renderEmailHTML(report, data, { variant = "email" } = {}) {
         </div>
         <div style="margin-top:6px;font-size:14px;color:#64748b;">
           ${st.category ? `<span style="background:#eff6ff;color:#1d4ed8;padding:1px 7px;border-radius:10px;margin-right:8px;">${esc(st.category)}</span>` : ""}
-          ${st.gain ? `<span style="color:#dc2626;font-weight:700;">★ +${esc(st.gain)}</span>&nbsp;本周&nbsp;&nbsp;` : ""}
+          ${st.gain ? `<span style="color:#dc2626;font-weight:700;">★ +${esc(st.gain)}</span>&nbsp;${isMonthly ? "本期" : "本周"}&nbsp;&nbsp;` : ""}
           ${st.total ? `总星 ${esc(st.total)}&nbsp;&nbsp;` : ""}
           ${st.heat ? `相对热度 ${esc(st.heat)}%` : ""}
         </div>
@@ -462,13 +470,12 @@ function main() {
     log(`解析到 ${report.items.length} 个项目章节`);
   }
 
-  // 文件名与本地 md 完全一致，只是扩展名不同
+  // 文件名与本地 md 完全一致，只是扩展名不同（统一走 common 的同一函数，禁止各自拼）
   // 周报: Github每周开源热榜—2026-10-19至2026-10-25.{md|html|pdf|txt}
   // 月报: Github每月开源热榜—2026年10月.{md|html|pdf|txt}
-  const W = data.window;
   const baseName = data.since === "monthly"
-    ? `Github每月开源热榜—${W.year}年${W.month}月`
-    : `Github每周开源热榜—${W.startISO}至${lastDayOf(W.endISO)}`;
+    ? monthFileBase(data.window)
+    : weekFileBase(data.window);
 
   const previewDir = ensureDir(path.join(ROOT, "preview"));
   const htmlPath = path.join(previewDir, `${baseName}.html`);          // 邮件正文（四项）

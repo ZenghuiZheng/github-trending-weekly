@@ -10,27 +10,21 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { ROOT, log, logErr, readJSON, writeJSON, writeText, retry, lastDayOf } from "./lib/common.mjs";
+import { ROOT, log, logErr, readJSON, writeJSON, writeText, retry, monthFileBase, weekFileBase, requireCurrentData, assertCurrentPeriod } from "./lib/common.mjs";
 import { loadConfig, reportConfigHealth } from "./lib/config.mjs";
 
 const args = process.argv.slice(2);
 const fileArg = args.find((a) => a.startsWith("--file="))?.split("=")[1];
 const dryRun = args.includes("--dry-run");
-const file = fileArg ? path.join(ROOT, fileArg) : pickLatest();
+const sinceArg = args.find((a) => a.startsWith("--since="))?.split("=")[1];
 
-function pickLatest() {
-  let best = null, bestT = 0;
-  for (const sub of ["weekly", "monthly"]) {
-    const dir = path.join(ROOT, "data", sub);
-    let names = [];
-    try { names = fs.readdirSync(dir).filter((n) => n.endsWith(".json")); } catch { continue; }
-    for (const n of names) {
-      const p = path.join(dir, n), t = fs.statSync(p).mtimeMs;
-      if (t > bestT) { bestT = t; best = p; }
-    }
-  }
-  return best;
+// ★ 无 --file 时：按「本期」精确定位，绝不按 mtime 取最新（旧 bug 详见 common.mjs）
+function resolveDataFile() {
+  if (fileArg) return path.isAbsolute(fileArg) ? fileArg : path.join(ROOT, fileArg);
+  const since = sinceArg || "weekly";
+  return requireCurrentData(since).path;
 }
+const file = resolveDataFile();
 
 // ---------------- Prompt 构建 ----------------
 function buildSystemPrompt() {
@@ -169,6 +163,11 @@ async function main() {
   if (!data) throw new Error(`无法读取 ${file}`);
   if (!data.items?.length) throw new Error("数据中没有项目");
 
+  // ★ 硬闸门：必须是本期数据。否则 write 会覆盖上一期报告，导致「每周都在推旧内容」
+  const relFile = path.relative(ROOT, file);
+  assertCurrentPeriod(data, relFile);
+  log(`✅ 期次校验通过：${relFile}（窗口 ${data.window.startISO} → ${data.window.endISO}）`);
+
   const cfg = loadConfig();
   log("=".repeat(60));
   reportConfigHealth(cfg);
@@ -199,11 +198,10 @@ async function main() {
     label: "LLM 撰写",
   });
 
-  // 落盘
+  // 落盘（文件名 = 数据 dict 的 window 推导，与 verify/render 共用同一函数，禁止各自拼）
   const outDir = isMonthly ? "月总结" : "周总结";
-  const name = isMonthly
-    ? `Github每月开源热榜—${data.window.year}年${data.window.month}月.md`
-    : `Github每周开源热榜—${data.window.startISO}至${lastDayOf(data.window.endISO)}.md`;
+  const baseName = isMonthly ? monthFileBase(data.window) : weekFileBase(data.window);
+  const name = `${baseName}.md`;
 
   const outPath = path.join(ROOT, outDir, name);
   writeText(outPath, markdown);
@@ -211,6 +209,7 @@ async function main() {
 
   // 记录到数据文件
   data.reportPath = path.relative(ROOT, outPath);
+  data.reportBaseName = baseName;
   data.reportGeneratedAt = new Date().toISOString();
   data.reportCharCount = markdown.length;
   writeJSON(file, data);

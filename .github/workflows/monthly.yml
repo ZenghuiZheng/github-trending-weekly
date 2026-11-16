@@ -67,15 +67,25 @@ jobs:
           TODAY=$(TZ='Asia/Shanghai' date '+%d')
           echo "今天: $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M')，明天是 ${TOMORROW} 号"
 
+          # ★ 为什么允许 1 号也跑：
+          #   cron "0 1 28-31" 在 28~31 号每天都触发，目的是保证
+          #   “月末最后一天”那次的 3 小时后能跟上推送；但月末最后一天本身
+          #   是 28/29/30/31 不定，所以 29/30/31 号下班次会顺延到次日 1 号。
+          #   旧逻辑只看“明天是不是 1 号”，导致 1 号当天的 cron 全被跳过，
+          #   月报一旦在月末当天失败，第二天就没机会重试了。
+          #   现在：月末最后一日 ✅ 或 1 号（补跑窗口）✅ 都放行。
           if [ "$FORCE" = "true" ]; then
             echo "run=true" >> $GITHUB_OUTPUT
             echo "强制运行"
           elif [ "$TOMORROW" = "01" ]; then
             echo "run=true" >> $GITHUB_OUTPUT
             echo "✅ 今天是本月最后一日，继续"
+          elif [ "$TODAY" = "01" ]; then
+            echo "run=true" >> $GITHUB_OUTPUT
+            echo "✅ 今天是月初 1 号（上月月报补跑窗口），继续"
           else
             echo "run=false" >> $GITHUB_OUTPUT
-            echo "⏭ 今天不是月末，跳过"
+            echo "⏭ 今天不是月末也不是 1 号，跳过"
           fi
 
       - name: 判断执行阶段
@@ -86,13 +96,35 @@ jobs:
           SCHED="${{ github.event.schedule }}"
           if [ -n "$MANUAL" ]; then
             echo "stage=$MANUAL" >> $GITHUB_OUTPUT
-          elif [[ "$SCHED" == 0*16* ]]; then
+          elif [ "$SCHED" = "0 16 27-31 * *" ]; then
             echo "stage=capture" >> $GITHUB_OUTPUT
-          elif [[ "$SCHED" == 0*23* ]]; then
+          elif [ "$SCHED" = "0 23 27-31 * *" ]; then
             echo "stage=write" >> $GITHUB_OUTPUT
-          else
+          elif [ "$SCHED" = "0 1 28-31 * *" ]; then
             echo "stage=deliver" >> $GITHUB_OUTPUT
+          else
+            # 手动/其它触发：整条链路跑完
+            echo "stage=all" >> $GITHUB_OUTPUT
           fi
+
+          # ★ 自愈：如果定时触发的阶段发现上游产物不存在（例如月末那次抓取失败），
+          #   就把阶段降级成 all，现场把缺失的前置步骤补齐，而不是白白失败一天。
+          #   这很重要：月末只有一次机会，错过了就得等下个月。
+          case "$SCHED" in
+            "0 23 27-31 * *") NEED="data/monthly" ;;
+            "0 1 28-31 * *")  NEED="月总结" ;;
+            *)                 NEED="" ;;
+          esac
+          CUR=$(grep -oP '(?<=^stage=).*' $GITHUB_OUTPUT | tail -1)
+          if [ -n "$NEED" ] && [ "$CUR" != "all" ]; then
+            if ! ls $NEED/*.json >/dev/null 2>&1 && ! ls $NEED/*.md >/dev/null 2>&1; then
+              echo "⚠️  定时阶段 '$CUR' 发现 $NEED 下无上游产物，自动升级为 all 补齐"
+              sed -i '/^stage=/d' $GITHUB_OUTPUT
+              echo "stage=all" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+          echo "最终阶段: $(grep -oP '(?<=^stage=).*' $GITHUB_OUTPUT | tail -1)"
           echo "北京时间: $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')"
 
       # ---------- 抓取 ----------
@@ -102,10 +134,27 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
         run: |
           node scripts/fetch.mjs --since=monthly
-          node scripts/enrich.mjs
-          node scripts/readme.mjs
+          # ★ 显式 --since=monthly：默认是 weekly，会读错期
+          node scripts/enrich.mjs --since=monthly
+          node scripts/readme.mjs --since=monthly
           # 计算连续霸榜
-          node scripts/streak.mjs --data=$(ls -t data/monthly/*.json | head -1)
+          TM=$(TZ='Asia/Shanghai' date +%Y-%m-%d)
+          node scripts/streak.mjs --data="data/monthly/$TM.json"
+
+      # ★ 三个 cron 分三个阶段跑，但每次都是全新 checkout，中间产物必须落仓库才能传到下一阶段
+      - name: 保存抓取结果
+        if: steps.gate.outputs.run == 'true' && (steps.stage.outputs.stage == 'capture' || steps.stage.outputs.stage == 'all')
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/ preview/ 2>/dev/null || true
+          if git diff --staged --quiet; then
+            echo "无变更"
+          else
+            git commit -m "月报数据 $(TZ='Asia/Shanghai' date '+%Y-%m')"
+            git pull --rebase --autostash origin ${GITHUB_REF_NAME} || true
+            git push
+          fi
 
       # ---------- 撰写 ----------
       - name: 调用 LLM 撰写月报
@@ -114,9 +163,45 @@ jobs:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
         run: |
-          node scripts/write.mjs
+          # ★ 按「本期」精确定位：data/monthly/<今天北京日期>.json，无兜底
+          TODAY=$(TZ='Asia/Shanghai' date +%Y-%m-%d)
+          DATA="data/monthly/$TODAY.json"
+          if [ ! -f "$DATA" ]; then
+            echo "::error::本期月报数据不存在: $DATA（capture 阶段失败，不能用旧数据写月报）"
+            exit 1
+          fi
+          echo "使用数据: $DATA"
+          node scripts/write.mjs --file="$DATA"
+
+      - name: 保存报告
+        if: steps.gate.outputs.run == 'true' && (steps.stage.outputs.stage == 'write' || steps.stage.outputs.stage == 'all')
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add 月总结/ data/ 2>/dev/null || true
+          if git diff --staged --quiet; then
+            echo "无变更"
+          else
+            git commit -m "月报 $(TZ='Asia/Shanghai' date '+%Y-%m')"
+            git pull --rebase --autostash origin ${GITHUB_REF_NAME} || true
+            git push
+          fi
 
       # ---------- 校验 + 推送 ----------
+      - name: 定位待推送数据
+        if: steps.gate.outputs.run == 'true' && (steps.stage.outputs.stage == 'deliver' || steps.stage.outputs.stage == 'all')
+        id: datafile
+        run: |
+          # ★ 按「本期」精确定位，无兜底
+          TODAY=$(TZ='Asia/Shanghai' date +%Y-%m-%d)
+          F="data/monthly/$TODAY.json"
+          if [ ! -f "$F" ]; then
+            echo "::error::本期月报数据不存在: $F（抓取阶段未成功，拒绝推送旧内容）"
+            exit 1
+          fi
+          echo "找到数据: $F"
+          echo "path=$F" >> $GITHUB_OUTPUT
+
       - name: 校验并推送月报
         if: steps.gate.outputs.run == 'true' && (steps.stage.outputs.stage == 'deliver' || steps.stage.outputs.stage == 'all')
         env:
@@ -131,10 +216,13 @@ jobs:
           FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
           FEISHU_SECRET: ${{ secrets.FEISHU_SECRET }}
           WECOM_WEBHOOK: ${{ secrets.WECOM_WEBHOOK }}
-        run: node scripts/deliver.mjs
+        run: |
+          # ★ 显式传 --data：月报 workflow 里同时存在周报/月报数据，
+          #   不传会让 deliver 按 mtime 撞到周报，推送错版
+          node scripts/deliver.mjs --data=${{ steps.datafile.outputs.path }}
 
       - name: 密钥泄露扫描
-        if: steps.gate.outputs.run == 'true'
+        if: always()
         run: |
           if grep -rInE 'sk-[A-Za-z0-9_-]{16,}|gh[pousr]_[A-Za-z0-9]{25,}|qyapi\.weixin\.qq\.com/cgi-bin/webhook/send\?key=|open\.feishu\.cn/open-apis/bot/v2/hook/[A-Za-z0-9-]{10,}' \
               --include='*.md' --include='*.json' --include='*.mjs' --include='*.yml' \
