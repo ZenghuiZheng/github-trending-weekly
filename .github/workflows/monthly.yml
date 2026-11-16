@@ -117,7 +117,10 @@ jobs:
           esac
           CUR=$(grep -oP '(?<=^stage=).*' $GITHUB_OUTPUT | tail -1)
           if [ -n "$NEED" ] && [ "$CUR" != "all" ]; then
-            if ! ls $NEED/*.json >/dev/null 2>&1 && ! ls $NEED/*.md >/dev/null 2>&1; then
+            FOUND=0
+            ls $NEED/*.json >/dev/null 2>&1 && FOUND=1
+            ls $NEED/*.md   >/dev/null 2>&1 && FOUND=1
+            if [ "$FOUND" = "0" ]; then
               echo "⚠️  定时阶段 '$CUR' 发现 $NEED 下无上游产物，自动升级为 all 补齐"
               sed -i '/^stage=/d' $GITHUB_OUTPUT
               echo "stage=all" >> $GITHUB_OUTPUT

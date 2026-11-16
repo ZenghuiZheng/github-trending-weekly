@@ -29,19 +29,19 @@
       "pushedAt": "2026-09-14T19:29:02Z",
       "license": "MIT",
       "archived": false,
-      "openIssues": 97,
+      "openIssues": 108,
       "topics": [],
       "homepage": "",
       "defaultBranch": "main",
       "topicsLine": "",
-      "ageDays": 129,
+      "ageDays": 135,
       "isNew": false,
       "relativeHeatPct": 31.6,
       "category": "插件技能",
       "categoryEmoji": "🧩",
       "needDeploy": false,
       "maintenance": "维护中",
-      "maintenanceNote": "最近提交在 41 天前",
+      "maintenanceNote": "最近提交在 47 天前",
       "install": {
         "installHeading": "## Installation",
         "installSection": "## Installation\n\nInstall the skill with the [Skills CLI](https://skills.sh):\n\n```bash\nnpx skills add https://github.com/cloudflare/security-audit-skill \\\n  --skill security-audit\n```\n\nUse `--global` for a user-level installation:\n\n```bash\nnpx skills add https://github.com/cloudflare/security-audit-skill \\\n  --skill security-audit \\\n  --global\n```\n\nRun `npx skills --help` for agent-selection and non-interactive options.",
@@ -65,10 +65,10 @@
       "periodLabel": "stars this week",
       "url": "https://github.com/stablyai/orca",
       "createdAt": "2026-03-17T03:28:57Z",
-      "pushedAt": "2026-10-26T10:38:40Z",
+      "pushedAt": "2026-11-01T02:22:02Z",
       "license": "MIT",
       "archived": false,
-      "openIssues": 8384,
+      "openIssues": 7877,
       "topics": [
         "ade",
         "agent-ide",
@@ -94,24 +94,24 @@
       "homepage": "https://orca.dev",
       "defaultBranch": "main",
       "topicsLine": "ade, agent-ide, ai-agents, automation, bot, claude-code",
-      "ageDays": 223,
+      "ageDays": 228,
       "isNew": false,
       "relativeHeatPct": 9,
       "category": "插件技能",
       "categoryEmoji": "🧩",
       "needDeploy": false,
       "maintenance": "慎用",
-      "maintenanceNote": "未处理 issue 8384 个",
+      "maintenanceNote": "未处理 issue 7877 个",
       "install": {
         "installHeading": "## Install",
         "installSection": "## Install\n\n### Desktop — macOS, Windows, Linux\n\n- **[Download from onOrca.dev](https://onorca.dev/download)**\n- Or grab a build directly: [macOS Apple Silicon](https://github.com/stablyai/orca/releases/latest/download/orca-macos-arm64.dmg) · [macOS Intel](https://github.com/stablyai/orca/releases/latest/download/orca-macos-x64.dmg) · [Windows (.exe)](https://github.com/stablyai/orca/releases/latest/download/orca-windows-setup.exe) · [Linux AppImage](https://github.com/stablyai/orca/releases/latest/download/orca-linux.AppImage) · [All builds](https://github.com/stablyai/orca/releases/latest)\n\n_Or via a package manager:_\n\n```bash",
         "installCommands": [
-          "# macOS (Homebrew)\nbrew install --cask stablyai/orca/orca\n\n# Arch Linux (AUR) — or stably-orca-git to build from source\nyay -S stably-orca-bin"
+          "# macOS (Homebrew)\n# Always use the full name; bare `orca` is an unrelated Plotly cask.\nbrew install --cask stablyai/orca/orca\n# Upgrade an existing install\nbrew upgrade --cask stablyai/orca/orca\n\n# Arch Linux (AUR) — or stably-orca-git to build from source\nyay -S stably-orca-bin"
         ],
         "intro": " Run Codex, ClaudeCode, OpenCode or Pi side-by-side — each in its own worktree, tracked in one place. Monitor and steer your agents from your phone — get notified when an agent finishes and send follow-ups from anywhere. Fan one prompt across five agents, each in its own isolated git worktree — compare the results and merge the winner. Ghostty-class terminals with WebGL rendering, infinite splits, and scrollback that survives restarts. Click any UI element in a real Chromium window to send its H",
         "found": true,
         "source": "api",
-        "readmeLength": 17389
+        "readmeLength": 17583
       }
     },
     {
@@ -124,10 +124,10 @@
       "periodLabel": "stars this week",
       "url": "https://github.com/Graphify-Labs/graphify",
       "createdAt": "2026-04-03T15:49:07Z",
-      "pushedAt": "2026-10-23T17:59:28Z",
+      "pushedAt": "2026-11-01T00:53:07Z",
       "license": "Apache-2.0",
       "archived": false,
-      "openIssues": 1639,
+      "openIssues": 1626,
       "topics": [
         "ai-agents",
         "antigravity",
@@ -153,14 +153,14 @@
       "homepage": "https://www.graphify.com",
       "defaultBranch": "v8",
       "topicsLine": "ai-agents, antigravity, ast, claude-code, code-analysis, code-search",
-      "ageDays": 205,
+      "ageDays": 211,
       "isNew": false,
       "relativeHeatPct": 5.1,
       "category": "插件技能",
       "categoryEmoji": "🧩",
       "needDeploy": false,
       "maintenance": "正在维护",
-      "maintenanceNote": "2 天内有提交",
+      "maintenanceNote": "0 天内有提交",
       "install": {
         "installHeading": "## Install",
         "installSection": "## Install\n\n> [!IMPORTANT]\n> **Official package:** The PyPI package is `graphifyy` (double-y). Other `graphify*` packages on PyPI are not affiliated. The CLI command is still `graphify`.\n\nThe official source repository is [Graphify-Labs/graphify](https://github.com/Graphify-Labs/graphify).\n\nThe two-command quickstart is at the top of this README. This section covers the install methods, project-scoped installs, and every supported platform.\n\n**Install methods** (pick one):\n\n```bash\nuv tool install graphifyy   # recommended, isolated env (if 'graphify' isn't found after, run: uv tool update-shell)\npipx install graphifyy      # alternative\npip install graphifyy       # may need PATH setup, see Troubleshooting below\n```\n\nThen run `graphify install` once. It detects which assistant you run and registers the skill, so there is no per-assistant setup. Open your AI assistant and type `/graphify .`\n\nTo install the assistant skill into the current repository instead of your user\nprofile, add `--project`:\n\n```bash\ngraphify install --project\ngraphify install --project --platform codex\n```\n\nProject-scoped installs write under the current directory, for example\n`.claude/skills/graphify/SKILL.md` or `.agents/skills/graphify/SKILL.md` (plus a\n`references/` sidecar the skill loads on demand), and\nprint a `git add` hint for files that can be committed.\nPer-platform commands that support project-scoped installs accept the same flag,\nfor example `graphify claude install --project` or `graphify codex install --project`.\n\n> [!TIP]\n> Hitting `command not found`, a `pip`-on-Mac/Windows issue, PowerShell quoting, `uvx` usage, git-hook PATH quirks, or strict mode? See **[Installation](https://docs.graphify.com/installation)** and **[Troubleshooting](https://docs.graphify.com/troubleshooting)**.\n\n<details>\n<summary><b>Pick your platform</b> (20+ assistants, click to expand)</summary>\n\n| Platform | Install command |\n|----------|----------------|\n| Claude Code (Linux/Mac) | `graphify install` |\n| Claude Code (Windows) | `graphify install` (auto-detected) or `graphify install --platform windows` |\n| CodeBuddy | `graphify install --platform codebuddy` |\n| Codex | `graphify install --platform codex` |\n| OpenCode | `graphify install --platform opencode` |\n| Kilo Code | `graphify install --platform kilo` |\n| GitHub Copilot CLI | `graphify install --platform copilot` |\n| VS Code Copilot Chat | `graphify vscode install` |\n| Aider | `graphify install --platform aider` |\n| OpenClaw | `graphif",
@@ -173,7 +173,7 @@
         "intro": "Type `/graphify` in your AI coding assistant and it maps your entire project (code, docs, PDFs, images, videos) into a **knowledge graph** you can **query instead of grepping** through files. - **Code maps for free, fully local.** Code is parsed with tree-sitter AST: deterministic, no LLM, nothing leaves your machine. (Docs, PDFs, images and video use your assistant's model, or a configured API key, for a semantic pass.) - **Every edge is explained.** Each connection is tagged `EXTRACTED` (expli",
         "found": true,
         "source": "api",
-        "readmeLength": 36084
+        "readmeLength": 37137
       }
     },
     {
@@ -186,15 +186,15 @@
       "periodLabel": "stars this week",
       "url": "https://github.com/anomalyco/opencode",
       "createdAt": "2025-04-30T20:08:00Z",
-      "pushedAt": "2026-10-26T09:50:59Z",
+      "pushedAt": "2026-11-01T02:05:21Z",
       "license": "MIT",
       "archived": false,
-      "openIssues": 3814,
+      "openIssues": 3748,
       "topics": [],
       "homepage": "https://opencode.ai",
       "defaultBranch": "dev",
       "topicsLine": "",
-      "ageDays": 543,
+      "ageDays": 549,
       "isNew": false,
       "relativeHeatPct": 2.7,
       "category": "可运行工具",
@@ -225,7 +225,7 @@
       "periodLabel": "stars this week",
       "url": "https://github.com/heygen-com/hyperframes",
       "createdAt": "2026-03-10T01:51:06Z",
-      "pushedAt": "2026-10-26T10:22:45Z",
+      "pushedAt": "2026-11-01T02:17:44Z",
       "license": "Apache-2.0",
       "archived": false,
       "openIssues": 207,
@@ -249,7 +249,7 @@
       "homepage": "https://hyperframes.heygen.com",
       "defaultBranch": "main",
       "topicsLine": "ai, ai-agents, animation, claude-code, ffmpeg, framework",
-      "ageDays": 230,
+      "ageDays": 236,
       "isNew": false,
       "relativeHeatPct": 7.7,
       "category": "音视频生成",
@@ -269,7 +269,7 @@
         "intro": "HyperFrames is an open-source framework for turning HTML, CSS, media, and seekable animations into deterministic MP4 videos. Use it locally with the CLI, from AI coding agents with skills, or as the rendering core behind hosted authoring workflows. Using Claude Code, Codex, Cursor, or another coding agent? Run `npx hyperframes skills update` once, then ask your agent to make a video. For Claude Code, install the versioned plugin: ```bash claude plugin marketplace add heygen-com/hyperframes claud",
         "found": true,
         "source": "api",
-        "readmeLength": 22944
+        "readmeLength": 23399
       }
     },
     {
@@ -282,10 +282,10 @@
       "periodLabel": "stars this week",
       "url": "https://github.com/Comfy-Org/ComfyUI",
       "createdAt": "2023-01-17T03:15:56Z",
-      "pushedAt": "2026-10-26T09:45:59Z",
+      "pushedAt": "2026-11-01T00:53:13Z",
       "license": "GPL-3.0",
       "archived": false,
-      "openIssues": 5352,
+      "openIssues": 5400,
       "topics": [
         "ai",
         "comfy",
@@ -297,14 +297,14 @@
       "homepage": "https://www.comfy.org/",
       "defaultBranch": "master",
       "topicsLine": "ai, comfy, comfyui, python, pytorch, stable-diffusion",
-      "ageDays": 1378,
+      "ageDays": 1383,
       "isNew": false,
       "relativeHeatPct": 3.3,
       "category": "可运行工具",
       "categoryEmoji": "🛠",
       "needDeploy": true,
       "maintenance": "慎用",
-      "maintenanceNote": "未处理 issue 5352 个",
+      "maintenanceNote": "未处理 issue 5400 个",
       "install": {
         "installHeading": "# Installing",
         "installSection": "# Installing\n\n## Windows and Mac\n\nWe highly recommend using the [desktop app](https://comfy.org/download):\n\n### [Link to Download](https://comfy.org/download)\n\nThe desktop app is the easiest and best way to use ComfyUI for new users.\n\n## Windows Portable\n\nThere is a portable standalone build for Windows that should work for running on Nvidia GPUs or for running on your CPU only. It is not recommended for regular users. Regular users should use the desktop app above.\n\n[Direct link to download (nvidia)](https://github.com/comfyanonymous/ComfyUI/releases/latest/download/ComfyUI_windows_portable_nvidia.7z)\n\nSimply download, extract with [7-Zip](https://7-zip.org) or with the windows explorer on recent windows versions and run. For smaller models you normally only need to put the checkpoints (the huge ckpt/safetensors files) in: ComfyUI\\models\\checkpoints but many of the larger models have multiple files. Make sure to follow the instructions to know which subfolder to put them in ComfyUI\\models\\\n\nIf you have trouble extracting it, right click the file -> properties -> unblock\n\nThe portable above currently comes with python 3.13 and pytorch cuda 13.0. Update your Nvidia drivers if it doesn't start.\n\n#### All Official Portable Downloads:\n\n[Portable for AMD GPUs](https://github.com/comfyanonymous/ComfyUI/releases/latest/download/ComfyUI_windows_portable_amd.7z)\n\n[Portable for Intel GPUs](https://github.com/comfyanonymous/ComfyUI/releases/latest/download/ComfyUI_windows_portable_intel.7z)\n\n[Portable for Nvidia GPUs](https://github.com/comfyanonymous/ComfyUI/releases/latest/download/ComfyUI_windows_portable_nvidia.7z) (supports 20 series and above).\n\n[Portable for Nvidia GPUs with pytorch cuda 12.6 and python 3.12](https://github.com/comfyanonymous/ComfyUI/releases/latest/download/ComfyUI_windows_portable_nvidia_cu126.7z) (Supports Nvidia 10 series and older GPUs, DO NOT USE THIS ON NEWER 20 SERIES AND ABOVE GPUS).\n\n#### How do I share models between another UI and ComfyUI?\n\nSee the [Config file](extra_model_paths.yaml.example) to set the search paths for models. In the standalone windows build you can find this file in the ComfyUI directory. Rename this file to extra_model_paths.yaml and edit it with your favorite text editor.\n\n\n## [comfy-cli](https://docs.comfy.org/comfy-cli/getting-started)\n\nYou can install and start ComfyUI using comfy-cli:\n```bash\npip install comfy-cli\ncomfy install\n```\n\n## Manual Install (Windows, Linux)\n\nPython 3.14 works but some custom node",
@@ -316,7 +316,7 @@
         "intro": "**The most powerful and modular AI engine for content creation.** ComfyUI is the AI creation engine for visual professionals who demand control over every model, every parameter, and every output. Its powerful and modular node graph interface empowers creatives to generate images, videos, 3D models, audio, and more... - ComfyUI natively supports the latest open-source state of the art models. - It is by far the most optimized inference engine for diffusion models in the world with a focus on loc",
         "found": true,
         "source": "api",
-        "readmeLength": 29298
+        "readmeLength": 29312
       }
     },
     {
@@ -329,15 +329,15 @@
       "periodLabel": "stars this week",
       "url": "https://github.com/akitaonrails/ai-memory",
       "createdAt": "2026-05-21T23:23:51Z",
-      "pushedAt": "2026-10-26T05:14:00Z",
+      "pushedAt": "2026-11-01T01:40:28Z",
       "license": "MIT",
       "archived": false,
-      "openIssues": 18,
+      "openIssues": 13,
       "topics": [],
       "homepage": "",
       "defaultBranch": "main",
       "topicsLine": "",
-      "ageDays": 157,
+      "ageDays": 163,
       "isNew": false,
       "relativeHeatPct": 23.9,
       "category": "插件技能",
@@ -355,7 +355,7 @@
         "intro": "> Long-term memory for AI coding agents. Quit Claude Code mid-task, > start OpenAI Codex in the same directory, continue without > re-explaining the architecture, the failed approaches, or the open > questions. **Website: [aimemory.sh](https://aimemory.sh)** Your coding agent probably has a memory feature already. Claude Code takes its own notes, Cursor remembers some things, and every platform is adding more. They all have the same limits: the notes live on one machine, belong to one agent,",
         "found": true,
         "source": "api",
-        "readmeLength": 44456
+        "readmeLength": 46265
       }
     },
     {
@@ -368,10 +368,10 @@
       "periodLabel": "stars this week",
       "url": "https://github.com/ruvnet/ruflo",
       "createdAt": "2025-06-02T21:24:20Z",
-      "pushedAt": "2026-10-26T09:39:41Z",
+      "pushedAt": "2026-11-01T00:45:43Z",
       "license": "MIT",
       "archived": false,
-      "openIssues": 988,
+      "openIssues": 1002,
       "topics": [
         "agentic-ai",
         "agentic-framework",
@@ -397,7 +397,7 @@
       "homepage": "https://Cognitum.One",
       "defaultBranch": "main",
       "topicsLine": "agentic-ai, agentic-framework, agentic-workflow, agents, ai-agents, ai-assistant",
-      "ageDays": 510,
+      "ageDays": 516,
       "isNew": false,
       "relativeHeatPct": 3.8,
       "category": "插件技能",
@@ -417,7 +417,7 @@
         "intro": "**An agent meta-harness for Claude Code and Codex.** ```text /plugin marketplace add ruvnet/ruflo /plugin install ruflo-core@ruflo /plugin install ruflo-console@ruflo /plugin install ruflo-mods@ruflo /reload-plugins /ruflo",
         "found": true,
         "source": "api",
-        "readmeLength": 34959
+        "readmeLength": 36088
       }
     },
     {
@@ -438,14 +438,14 @@
       "homepage": "",
       "defaultBranch": "main",
       "topicsLine": "",
-      "ageDays": 272,
+      "ageDays": 277,
       "isNew": false,
       "relativeHeatPct": 1.3,
       "category": "插件技能",
       "categoryEmoji": "🧩",
       "needDeploy": false,
       "maintenance": "慎用",
-      "maintenanceNote": "已 189 天无提交，可能已停更",
+      "maintenanceNote": "已 194 天无提交，可能已停更",
       "install": {
         "installHeading": "## Install",
         "installSection": "## Install\n\n**Option A: Claude Code Plugin (recommended)**\n\nFrom within Claude Code, first add the marketplace:\n```\n/plugin marketplace add forrestchang/andrej-karpathy-skills\n```\n\nThen install the plugin:\n```\n/plugin install andrej-karpathy-skills@karpathy-skills\n```\n\nThis installs the guidelines as a Claude Code plugin, making the skill available across all your projects.\n\n**Option B: CLAUDE.md (per-project)**\n\nNew project:\n```bash\ncurl -o CLAUDE.md https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/CLAUDE.md\n```\n\nExisting project (append):\n```bash\necho \"\" >> CLAUDE.md\ncurl https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/CLAUDE.md >> CLAUDE.md\n```",
@@ -468,15 +468,15 @@
       "periodLabel": "stars this week",
       "url": "https://github.com/anthropics/knowledge-work-plugins",
       "createdAt": "2026-01-23T20:11:54Z",
-      "pushedAt": "2026-10-26T07:50:14Z",
+      "pushedAt": "2026-10-31T07:25:15Z",
       "license": "Apache-2.0",
       "archived": false,
-      "openIssues": 142,
+      "openIssues": 159,
       "topics": [],
       "homepage": "",
       "defaultBranch": "main",
       "topicsLine": "",
-      "ageDays": 275,
+      "ageDays": 281,
       "isNew": false,
       "relativeHeatPct": 8.4,
       "category": "插件技能",
@@ -567,8 +567,8 @@
       "stars": 9772
     }
   ],
-  "enrichedAt": "2026-10-26T10:38:51.697Z",
-  "readmeAt": "2026-10-26T10:38:53.936Z",
+  "enrichedAt": "2026-11-01T02:22:10.762Z",
+  "readmeAt": "2026-11-01T02:22:12.568Z",
   "reportPath": "周总结/Github每周开源热榜—2026-10-19至2026-10-25.md",
   "reportGeneratedAt": "2026-10-26T10:39:22.120Z",
   "reportCharCount": 9736
