@@ -10,7 +10,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { ROOT, log, logErr, readJSON, writeJSON, writeText, retry, monthFileBase, weekFileBase, requireCurrentData, assertCurrentPeriod } from "./lib/common.mjs";
+import { ROOT, log, logErr, readJSON, writeJSON, writeText, retry, monthFileBase, weekFileBase, requireCurrentData, assertCurrentPeriod, lastDayOf } from "./lib/common.mjs";
 import { loadConfig, reportConfigHealth } from "./lib/config.mjs";
 
 const args = process.argv.slice(2);
@@ -84,11 +84,17 @@ function buildUserPrompt(data) {
     ? `\n\n## 连续霸榜数据（用于"连续霸榜项目"章节）\n${JSON.stringify(data.streaks, null, 2)}`
     : "";
 
+  // ★ endISO 是排他上界（下周一 00:00），报告读者看的是“最后一天”，必须用 lastDayOf
+  const lastDay = lastDayOf(window.endISO);
+  const rangeText = isMonthly ? `${window.startISO} 至 ${window.endISO}` : `${window.startISO} 至 ${lastDay}`;
+
   return `## 本期基本信息
 
 - 类型：${isMonthly ? "月度报告" : "周度报告"}
-- 统计窗口：${window.startISO} 至 ${window.endISO}
-- 窗口说明：${isMonthly ? `截至 ${window.endISO} 的过去 30 日（非自然月首尾，请在报告中说明这一点以降低歧义）` : "过去 7 天（北京时间）"}
+- 统计窗口：${rangeText}（含首尾）
+- 窗口说明：${isMonthly
+    ? `截至 ${window.endISO} 的过去 30 日（非自然月首尾，请在报告中说明这一点以降低歧义）`
+    : `过去 7 天（北京时间）；统计区间为 ${window.startISO} 00:00 到 ${lastDay} 24:00，即 ${window.endISO} 00:00 截止`}
 - 数据来源：${data.source}
 - 筛选阈值：${data.threshold === 0 ? "无阈值" : `期间涨星 ≥ ${data.threshold}`}
 - 解析到项目总数：${data.totalParsed}，达标：${data.passedCount}，本期收录：${data.items.length}
@@ -107,7 +113,7 @@ ${isMonthly
   ? "按 SKILL.md 的「二、月报撰写」结构输出：趋势 + Top3 深度点评 + 连续霸榜 + 20 条精简版。"
   : "按 SKILL.md 的「一、周报撰写」结构输出完整周报。"}
 
-文件名中会使用：${window.startISO}至${window.endISO}（周报）或 ${window.year}年${window.month}月（月报）。
+文件名中会使用：${isMonthly ? `${window.year}年${window.month}月` : `${window.startISO}至${lastDay}`}（与报告标题保持一致）。
 
 直接输出 Markdown 报告正文。`;
 }
