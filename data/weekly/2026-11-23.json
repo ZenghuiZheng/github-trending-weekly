@@ -1,0 +1,1118 @@
+{
+  "version": 1,
+  "since": "weekly",
+  "capturedAt": "2026-11-22T21:41:06.201Z",
+  "capturedAtCN": "2026-11-23 05:41:06",
+  "dateKey": "2026-11-23",
+  "window": {
+    "startISO": "2026-11-16",
+    "endISO": "2026-11-23",
+    "label": "2026-11-16至2026-11-23"
+  },
+  "source": "https://api.github.com/search/repositories（分层查询：近 1 周新建 / 近 1 月新建 / 近 3 月新建）",
+  "snapshotFile": null,
+  "threshold": 500,
+  "maxItems": 10,
+  "totalParsed": 116,
+  "passedCount": 82,
+  "items": [
+    {
+      "repo": "ItsNotRexed/Leonida",
+      "lang": "Python",
+      "desc": "Leonida Is A Native PC Recompilation Of The Xbox Version Of Grand Theft Auto 6",
+      "stars": 14070,
+      "forks": 1139,
+      "gain": 14070,
+      "periodLabel": "stars this week",
+      "url": "https://github.com/ItsNotRexed/Leonida",
+      "createdAt": "2026-11-20T20:07:13Z",
+      "pushedAt": "2026-11-22T20:00:43Z",
+      "license": "GPL-3.0",
+      "archived": false,
+      "openIssues": 1341,
+      "topics": [],
+      "homepage": "",
+      "defaultBranch": "main",
+      "createdInWindow": true,
+      "_tier": "近 1 周新建",
+      "_ageDays": 2,
+      "gainMethod": "new-repo",
+      "gainEstimated": false,
+      "topicsLine": "",
+      "ageDays": 2,
+      "isNew": true,
+      "relativeHeatPct": 100,
+      "category": "可运行工具",
+      "categoryEmoji": "🛠",
+      "needDeploy": true,
+      "maintenance": "正在维护",
+      "maintenanceNote": "0 天内有提交",
+      "install": {
+        "installHeading": null,
+        "installSection": null,
+        "installCommands": [],
+        "intro": "Leonida is a static recompilation project. The Xbox Series CPU is x86-64 like a PC, so the game's code is loaded and run natively, and the console's system software is reimplemented. The console's precompiled RDNA2 GPU programs are translated to SPIR-V for Vulkan. The game's models, textures and audio are read from your package. All of this happens **on your PC, from your own copy of the game**. > [!IMPORTANT] > This repository **does not contain the game, keys or an executable**, and it does no",
+        "found": false,
+        "source": "api",
+        "readmeLength": 18337,
+        "reason": "README_NOT_FOUND"
+      }
+    },
+    {
+      "repo": "erkamyaman/rust-anything",
+      "lang": "Rust",
+      "desc": "Rewrite your whole app in Rust, one piece at a time, checked against the original's recorded behavior at every step. CLIs, HTTP servers and libraries in TypeScript, Python, C, Go, Ruby and Java.",
+      "stars": 7929,
+      "forks": 633,
+      "gain": 7929,
+      "periodLabel": "stars this week",
+      "url": "https://github.com/erkamyaman/rust-anything",
+      "createdAt": "2026-11-16T12:10:36Z",
+      "pushedAt": "2026-11-22T20:06:02Z",
+      "license": "MIT",
+      "archived": false,
+      "openIssues": 5,
+      "topics": [
+        "agent-skills",
+        "claude-code",
+        "cli",
+        "code-migration",
+        "codex",
+        "ffi",
+        "golang",
+        "java",
+        "javascript",
+        "mcp",
+        "migration",
+        "napi",
+        "performance",
+        "porting",
+        "pyo3",
+        "python",
+        "rewrite",
+        "ruby",
+        "rust",
+        "typescript"
+      ],
+      "homepage": "https://www.npmjs.com/package/rust-anything",
+      "defaultBranch": "main",
+      "createdInWindow": true,
+      "_tier": "近 1 周新建",
+      "_ageDays": 6,
+      "gainMethod": "new-repo",
+      "gainEstimated": false,
+      "topicsLine": "agent-skills, claude-code, cli, code-migration, codex, ffi",
+      "ageDays": 6,
+      "isNew": true,
+      "relativeHeatPct": 100,
+      "category": "插件技能",
+      "categoryEmoji": "🧩",
+      "needDeploy": false,
+      "maintenance": "正在维护",
+      "maintenanceNote": "0 天内有提交",
+      "install": {
+        "installHeading": "## Install the ports",
+        "installSection": "## Install the ports\n\nThe ESLint port is an npm command. It runs the Rust port for what it covers and ESLint 10.15.0,\npinned as a dependency, for everything else, so the output is ESLint's either way:\n\n```sh\nnpm install -g eslint-rs     # ESLint 10.15.0\n```\n\n| Command | Answered in Rust | Handed to ESLint 10.15.0 |\n| --- | --- | --- |\n| `eslint-rs` | `--no-config-lookup --rule ... --stdin` with the 90 ported rules (`stylish` and `json` output, fixes, suggestions) | `eslint.config.*` lookups (`eslint .`), files and folders, the other 202 core rules, plugins, parsers, the other formatters, parse errors |\n\nThe binary comes for macOS (arm64, x64) and Linux (x64, arm64, glibc). On Windows and elsewhere,\nor with `RUST_ANYTHING_MODE=old`, `eslint-rs` runs ESLint itself: same output, no speedup.\nInstalled from its tarballs on macOS arm64, `eslint-rs` matches ESLint 10.15.0 installed beside it\non all 10,585 recorded runs ([how](docs/packaging.md#a-whole-cli-front-door)).\n\nThe Prettier port is packaged the same way (`prettier-rs`, Prettier 3.6.2) and replays\n17,224/17,224 recorded runs from its tarballs, 7.9% handed to Prettier, but it is not on npm.\n`rust-anything package` makes this kind of package from any CLI front door.",
+        "installCommands": [
+          "npm install -g eslint-rs     # ESLint 10.15.0",
+          "Install rust-anything: run `cargo install rust-anything`, then `rust-anything setup`.\nTell me when to restart you.",
+          "cargo install rust-anything   # from crates.io\nrust-anything setup           # registers it with Claude Code, Codex, Cursor, Gemini CLI and OpenCode"
+        ],
+        "intro": "Point it at your app: it records what the original does, your coding agent writes the Rust one piece at a time,<br> and every piece is checked against that recording before it moves on. It doesn't translate code; it proves the rewrite.</p> Made in Türkiye 🇹🇷 by <a href=\"https://github.com/erkamyaman\">erKam Yaman</a> · <a href=\"https://github.com/sponsors/erkamyaman\">❤️ Sponsor me</a> · Sponsored by <a href=\"https://coderabbit.link/erkamyaman\"><img src=\"docs/assets/brands/coderabbit.png\" width=",
+        "found": true,
+        "source": "api",
+        "readmeLength": 24521
+      }
+    },
+    {
+      "repo": "Ebony-Vinyl/dsh-our-free-model",
+      "lang": "JavaScript",
+      "desc": "在 dsh 里装上这个插件即可，无需登录、注册或填 API Key，就能使用包括 DeepSeek V4.1 Flash、Kimi K3 在内的前沿模型——完全免费，不限量。 All you do is install this plugin in dsh: no login, no sign-up, no API key — the frontier models are just there, DeepSeek V4.1 Flash and Kimi K3 among them. Completely free, with no usage cap.",
+      "stars": 83925,
+      "forks": 2349,
+      "gain": 7079,
+      "periodLabel": "stars this week",
+      "url": "https://github.com/Ebony-Vinyl/dsh-our-free-model",
+      "createdAt": "2026-09-24T16:17:19Z",
+      "pushedAt": "2026-11-22T16:01:28Z",
+      "license": "NOASSERTION",
+      "archived": false,
+      "openIssues": 227,
+      "topics": [
+        "ai-agents",
+        "deepseek",
+        "deepseek-harness",
+        "developer-tools",
+        "dsh",
+        "dsh-plugin",
+        "free-model",
+        "llm",
+        "model-provider",
+        "openai-compatible"
+      ],
+      "homepage": "",
+      "defaultBranch": "main",
+      "createdInWindow": false,
+      "_tier": "近 3 月新建",
+      "_ageDays": 59,
+      "gainMethod": "snapshot-diff",
+      "gainEstimated": false,
+      "topicsLine": "ai-agents, deepseek, deepseek-harness, developer-tools, dsh, dsh-plugin",
+      "ageDays": 59,
+      "isNew": true,
+      "relativeHeatPct": 8.4,
+      "category": "插件技能",
+      "categoryEmoji": "🧩",
+      "needDeploy": false,
+      "maintenance": "正在维护",
+      "maintenanceNote": "0 天内有提交",
+      "install": {
+        "installHeading": "## 安装",
+        "installSection": "## 安装\n\n> **⚠️ 不要安装 npm 上那个裸名的 `dsh-our-free-model`。**\n>\n> npm 上的 `dsh-our-free-model` 包**不是本仓库发布的**。它由第三方打包，内容与本仓库\n> 不一致：`index.js`、`client.js` 被改动，并额外包含本仓库从未有过的\n> `src/channel-visibility.js`。装到它得不到本项目审核过的构建，也拿不到本仓库的签名\n> 清单校验与应用内升级。\n>\n> 本仓库自己发布的是带 scope 的 **`@ebony-vinyl/dsh-our-free-model`**，与 Release 的\n> `dsh-our-free-model-<版本>.tgz` 同源、同版本。只想走 npm 时可以装它：\n>\n> ```\n> dsh plugin --profile web add @ebony-vinyl/dsh-our-free-model@2.9.0\n> ```\n>\n> 注意它的包名带 scope，因此挂载条目是 `@ebony-vinyl/dsh-our-free-model`，与下文\n> 裸包名的本地安装方式不能混用（同一个 profile 里只选一种）。\n>\n> 其它渠道出现的同名包一律以本仓库为准。\n\n\n**命令行（纯 dsh web）**\n\n```\ndsh plugin --profile web add /绝对路径/dsh-our-free-model\n```\n\n安装完成后重启应用一次。`--profile` 填写实际使用的 profile 名称。\n\n**DSHEAC AIO / 桌面端：请先阅读本节**\n\n部分 DSHEAC AIO / 旧版桌面整合包在启动 web 服务之前会执行 profile 闸门，\n限制 profile 中的符号链接或目录 junction。若当前宿主包含该检查，可能报错：\n\n```\nPROFILE_UPGRADE_REQUIRED: offline dependency migration is not yet available\n```\n\n遇到该闸门时，不要使用 `link:` 依赖或 junction；使用应用内插件管理器，\n或下方的本地 tarball 安装。不同宿主的限制以自身日志和安装机制为准。\n\n以真实目录手工安装时，使用可信源码打出的本地 tarball：\n\n1. 创建 `<DSH_HOME>/profiles/<profile>/vendor/`，在审核过的本仓库目录运行 `npm pack --ignore-scripts --pack-destination \"<DSH_HOME>/profiles/<profile>/vendor\"`，或将本仓库正式发布的同版本 tarball 放入该目录。本地打包不执行 npm 发布。\n2. 在 profile 的 `package.json` 的 dependencies 中加入 `\"dsh-our-free-model\": \"file:./vendor/dsh-our-free-model-2.9.0.tgz\"`。文件名版本跟随仓库 `package.json`，不要改成同名 npm 注册表版本；再通过宿主的安装流程解析依赖。\n3. 在 dsh.profile.bundles 末尾追加 `\"dsh-our-free-model\"`。\n\n包管理器拥有这份安装的字节时，同时将 bundle config 或插件 `settings.json` 的 `distribution` 设为 `managed`，由包管理器统一更新；应用内升级、公告 feed 与热重载会停用，模型功能保留。以后更新时替换可信 tarball 并同步依赖路径，避免包管理器按旧锁文件恢复旧版本。\n\n若手工复制发布文件，必须复制完整包，包括 `adapter/`、`src/`、`locale/`、`vendor/` 下的引擎资源目录（`engine.json`、LICENSE、NOTICE 与对应二进制），以及 `vendor/channel-pack/` 下的 `pack.js`、WASM、LICENSE、NOTICE；只复制入口脚本会导致渠道加载失败。\n\n不要再向 cordis.patch.yml 添加条目。被 dsh.profile.bundles 引用的包，其自带的\npatch 层会自动生效；两处同时注册将报错 duplicate loader entry id: our-free-model。\n\n**整合包（托管安装）**\n\n插件由整合包（EAC 整合包、Mojobox 等）安装时，更新时机与文件字节由安装方控制：\n安装时将 bundle config 设为 distribution: 'managed'（或向 settings.json 写入\n同一字段），插件的应用内升级、公告 feed 与热重载即全部停用——两个写入方同时操作\n同一安装目录只会导致目录损坏；模型 lane 不受影响。相关验收见\nscripts/offline-test.mjs；目录就绪记录（manifest 0.15 / 出处 / 许可 / 完整性）\n位于 catalog/ 下。\n\n**启动桌面端前的自检**\n\n可直接调用桌面端自身的闸门代码进行自检：\n\n```\nnode -e \"\nconst g = require('/sidecar/dist/lib/profile-upgrade.js');\nconst app = '', profile = '/profiles/';\nconsole.log(g.planProfileUpgrade(app, profile));\ng.assertProfileStartup(app, profile);\nconsole.log('startup gate: PASS');\n\"\n```\n\n预期输出为 status",
+        "installCommands": [],
+        "intro": "**简体中文** | [English](README_EN.md) > 你只需在 dsh 里装上这个插件，无需登录、注册、填 API Key 或任何其它操作， > 就能用上包括 DeepSeek V4.1 Flash、Kimi K3 在内的前沿模型——完全免费，不限量。 > > *All you do is install this plugin in dsh: no login, no sign-up, no API key, nothing > else. The frontier models are just there — DeepSeek V4.1 Flash, Kimi K3 and the rest. > Free, with no usage cap.* >",
+        "found": true,
+        "source": "api",
+        "readmeLength": 49061
+      }
+    },
+    {
+      "repo": "storytold/craft-anything",
+      "lang": "Rust",
+      "desc": "Craft Anything: understand how any software works, and craft your own.",
+      "stars": 41151,
+      "forks": 8168,
+      "gain": 6803,
+      "periodLabel": "stars this week",
+      "url": "https://github.com/storytold/craft-anything",
+      "createdAt": "2026-10-31T14:50:00Z",
+      "pushedAt": "2026-11-22T14:30:03Z",
+      "license": "Apache-2.0",
+      "archived": false,
+      "openIssues": 516,
+      "topics": [],
+      "homepage": "",
+      "defaultBranch": "main",
+      "createdInWindow": false,
+      "_tier": "近 1 月新建",
+      "_ageDays": 22,
+      "gainMethod": "snapshot-diff",
+      "gainEstimated": false,
+      "topicsLine": "",
+      "ageDays": 22,
+      "isNew": true,
+      "relativeHeatPct": 16.5,
+      "category": "可运行工具",
+      "categoryEmoji": "🛠",
+      "needDeploy": true,
+      "maintenance": "正在维护",
+      "maintenanceNote": "0 天内有提交",
+      "install": {
+        "installHeading": null,
+        "installSection": null,
+        "installCommands": [
+          "git clone https://github.com/storytold/craft-anything && cd craft-anything\ncargo run --release -p craft-anything                # the desktop app\ncargo install --path apps/craft-anything-cli         # the CLI, as `craft-anything-cli`\ncraft-anything-cli doctor                            # checks the install, coding agents and engines",
+          "ver=0.2.0   # change this to the version you want\ncurl -fLO \"https://github.com/storytold/craft-anything/releases/download/v$ver/craft-anything-cli-$ver-macos-universal.zip\"\nditto -x -k \"craft-anything-cli-$ver-macos-universal.zip\" .\nmkdir -p ~/.local/bin\nmv \"craft-anything-cli-$ver-macos-universal/craft-anything-cli\" ~/.local/bin/\n~/.local/bin/craft-anything-cli --version"
+        ],
+        "intro": " Point it at a target, say what you want, and it studies the original with real inspection tools,<br> has a coding agent build a new project, checks the result against the original and refines it. > [!NOTE] > **ArtCraft is a community of artists from all walks of life.** Painters, photographers, > filmmakers, illustrators, designers, animators, hobbyists, and people who picked up a pencil > last week. If you make things, you're one of us. **[Come say hi on Discord](https://discord.gg/artcraft).*",
+        "found": true,
+        "source": "api",
+        "readmeLength": 27768
+      }
+    },
+    {
+      "repo": "ccch1mneyyy/dsh-Go",
+      "lang": "Dart",
+      "desc": "dsh-go — DeepSeek Harness 装进口袋：手机本机运行，也能遥控你的电脑。",
+      "stars": 30148,
+      "forks": 1442,
+      "gain": 5736,
+      "periodLabel": "stars this week",
+      "url": "https://github.com/ccch1mneyyy/dsh-Go",
+      "createdAt": "2026-10-25T08:09:52Z",
+      "pushedAt": "2026-11-22T21:34:52Z",
+      "license": "AGPL-3.0",
+      "archived": false,
+      "openIssues": 877,
+      "topics": [
+        "ai-agent",
+        "android",
+        "android-app",
+        "coding-agent",
+        "deepseek",
+        "deepseek-harness",
+        "dsh",
+        "dsh-plugin",
+        "dsh-tui",
+        "flutter",
+        "llm"
+      ],
+      "homepage": "",
+      "defaultBranch": "main",
+      "createdInWindow": false,
+      "_tier": "近 1 月新建",
+      "_ageDays": 29,
+      "gainMethod": "snapshot-diff",
+      "gainEstimated": false,
+      "topicsLine": "ai-agent, android, android-app, coding-agent, deepseek, deepseek-harness",
+      "ageDays": 28,
+      "isNew": true,
+      "relativeHeatPct": 19,
+      "category": "插件技能",
+      "categoryEmoji": "🧩",
+      "needDeploy": false,
+      "maintenance": "正在维护",
+      "maintenanceNote": "0 天内有提交",
+      "install": {
+        "installHeading": "## 安装",
+        "installSection": "## 安装\n\n安装要求为 Android 8.0（API 26）及以上。Release 页面上的 **arm64** 安装包适用于常见的 64 位 Android 手机；x86_64 设备和模拟器用的 x64 包在发布说明末尾的「其他版本下载」里。仓库没有 32 位 ARM 构建。\n\n1. 从 [GitHub Releases](https://github.com/ccch1mneyyy/dsh-go/releases/latest) 或[官网下载页](https://go.dshtui.com/download)下载对应架构的 APK，并按系统提示允许该安装来源。\n2. 首次启动时，选择在本机安装运行环境，或连接远程主机。\n3. 为所选主机配置模型和所需凭据，再开始对话；部分远程渠道需要在主机侧配置。\n\n仅连接远程主机时，不必在手机上安装本机运行环境。手机操控只对正常模式下的本机引擎开放，需要按界面说明开启无障碍等权限；不打扰模式另外要求 Android 14 及以上，以及 Shizuku 或自连 ADB。首次使用可按[使用指南](docs/guide/README.md)逐项配置。\n\n本地引擎默认使用 PRoot 兼容启动。开发者选项中的直接启动默认关闭，开启后的兼容性和回退方式见[常见问题](docs/guide/zh/11-faq.md)。当前 Android 构建以 APK 侧载为目标，不是 Google Play 发布配置。",
+        "installCommands": [
+          "git clone https://github.com/ccch1mneyyy/dsh-go.git\ncd dsh-go\n\nbash tooling/setup-toolchain.sh\nsource tooling/env.sh\nflutter --version\njava -version\n\nbash runtime/build-runtime.sh arm64-v8a\nDSH_BETA_TOKEN_FILE= bash tooling/build-apk.sh -f arm64 --keep-daemon"
+        ],
+        "intro": " DeepSeek Harness 的手机应用：Android 版已发布；iOS 版仍在开发和真机测试，需在 Mac 上自行签名编译（<a href=\"app/ios/README.md\">iOS 工程</a> · <a href=\"docs/architecture.md\">架构</a>）。 DSH Go 提供聊天界面、本机运行环境和远程连接，是基于 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的第三方项目。运行在手机上的是 DSH 引擎；模型请求仍由你配置的模型提供方处理。 - **本机运行**：在 App 内安装 Ubuntu、Node.js 与 DSH 运行环境，无需 Root 或另装 Termux。 - **远程连接**：通过 SSH 或李国宝老师开发的 [DSHarness Remote](https://github.com/liguobao/ds-harness-remote) 使用电脑、服务器上的 DSH。 - **聊天与工具**：切换模型，发送图片、使用语音输入，处理工具审批",
+        "found": true,
+        "source": "api",
+        "readmeLength": 14742
+      }
+    },
+    {
+      "repo": "anefzaoui/misterdownloadmanager",
+      "lang": "Rust",
+      "desc": "misterdownloadmanager: The ultimate open-source, clean-room download manager written from scratch in pure Rust for Windows, Mac, and Linux",
+      "stars": 16537,
+      "forks": 1415,
+      "gain": 5651,
+      "periodLabel": "stars this week",
+      "url": "https://github.com/anefzaoui/misterdownloadmanager",
+      "createdAt": "2026-10-29T01:25:19Z",
+      "pushedAt": "2026-11-22T21:18:11Z",
+      "license": "GPL-3.0",
+      "archived": false,
+      "openIssues": 132,
+      "topics": [
+        "bittorrent-client",
+        "debrid",
+        "download-accelerator",
+        "download-manager",
+        "downloadmanager",
+        "egui",
+        "file-downloader",
+        "gallery-dl",
+        "idm",
+        "idm-alternative",
+        "internet-download-manager",
+        "m3u8-downloader",
+        "magnet",
+        "playlist-downloader",
+        "real-debrid",
+        "rust",
+        "torrent-client",
+        "video-downloader",
+        "youtube-downloader",
+        "yt-dlp"
+      ],
+      "homepage": "https://misterdownloadmanager.com",
+      "defaultBranch": "main",
+      "createdInWindow": false,
+      "_tier": "近 1 月新建",
+      "_ageDays": 25,
+      "gainMethod": "snapshot-diff",
+      "gainEstimated": false,
+      "topicsLine": "bittorrent-client, debrid, download-accelerator, download-manager, downloadmanager, egui",
+      "ageDays": 24,
+      "isNew": true,
+      "relativeHeatPct": 34.2,
+      "category": "可运行工具",
+      "categoryEmoji": "🛠",
+      "needDeploy": true,
+      "maintenance": "正在维护",
+      "maintenanceNote": "0 天内有提交",
+      "install": {
+        "installHeading": null,
+        "installSection": null,
+        "installCommands": [
+          "winget install AhmedNefzaoui.MisterDownloadManager\nwinget upgrade AhmedNefzaoui.MisterDownloadManager"
+        ],
+        "intro": " 🧩 <b>Browser extension:</b><br> Windows 10 and 11 (x64, ARM64, 32-bit) · Linux (Ubuntu, Debian, Mint, Fedora, openSUSE, Arch and more; x86-64 and ARM64) · macOS (Apple Silicon and Intel, experimental)<br> 86 languages · no ads, no trial, no sign-up | 🚀 [Download](#download) | ⚡ [Why switch](#why-switch-from-idm) | 🖼️ [Screenshots](#screenshots) | ✨ [Getting started](docs/getting-started.md) | 📜 [Help and tutorials](docs/README.md) | | --- | --- | --- | --- | --- | **Same window you know. Yo",
+        "found": true,
+        "source": "api",
+        "readmeLength": 43089
+      }
+    },
+    {
+      "repo": "huami1314/GestaltX",
+      "lang": "Swift",
+      "desc": "An MobileGestalt editor for iOS 27.x, featuring region-code tweaks, device presets, backups.",
+      "stars": 8804,
+      "forks": 2760,
+      "gain": 4402,
+      "periodLabel": "stars this week",
+      "url": "https://github.com/huami1314/GestaltX",
+      "createdAt": "2026-11-09T05:15:48Z",
+      "pushedAt": "2026-11-17T02:00:13Z",
+      "license": "GPL-3.0",
+      "archived": false,
+      "openIssues": 110,
+      "topics": [],
+      "homepage": "",
+      "defaultBranch": "main",
+      "createdInWindow": false,
+      "_tier": "近 1 月新建",
+      "_ageDays": 14,
+      "gainMethod": "estimated-rate",
+      "gainEstimated": true,
+      "topicsLine": "",
+      "ageDays": 13,
+      "isNew": true,
+      "relativeHeatPct": 50,
+      "category": "可运行工具",
+      "categoryEmoji": "🛠",
+      "needDeploy": true,
+      "maintenance": "正在维护",
+      "maintenanceNote": "5 天内有提交",
+      "install": {
+        "installHeading": null,
+        "installSection": null,
+        "installCommands": [],
+        "intro": "A MobileGestalt editor for iPhone and iPad. Developed by [huamidev](https://github.com/huamidev). | Category | Presets and tools | | --- | --- | | Display | Dynamic Island capability and layout, Always-On Display, AOD Vibrancy, high-luminance AOD, AOD flipbook, HDR photo display, wallpaper parallax, Liquid Glass low-power rendering, experimental PWM and DisplayPort flags | | Device | Model name, boot/shutdown chime, charge limit, tap to wake, Camera Control settings, Action Button settings, Coll",
+        "found": false,
+        "source": "api",
+        "readmeLength": 9705,
+        "reason": "README_NOT_FOUND"
+      }
+    },
+    {
+      "repo": "libracoder/kiri",
+      "lang": "Rust",
+      "desc": "A small, fast container runtime for macOS, Windows and Linux with free Ngrok alternative",
+      "stars": 12309,
+      "forks": 598,
+      "gain": 4359,
+      "periodLabel": "stars this week",
+      "url": "https://github.com/libracoder/kiri",
+      "createdAt": "2026-11-02T16:11:30Z",
+      "pushedAt": "2026-11-22T20:00:33Z",
+      "license": "Apache-2.0",
+      "archived": false,
+      "openIssues": 191,
+      "topics": [
+        "containers",
+        "docker",
+        "kubernetes",
+        "linux",
+        "macos",
+        "oci",
+        "windows"
+      ],
+      "homepage": "https://runkiri.com",
+      "defaultBranch": "main",
+      "createdInWindow": false,
+      "_tier": "近 1 月新建",
+      "_ageDays": 20,
+      "gainMethod": "snapshot-diff",
+      "gainEstimated": false,
+      "topicsLine": "containers, docker, kubernetes, linux, macos, oci",
+      "ageDays": 20,
+      "isNew": true,
+      "relativeHeatPct": 35.4,
+      "category": "可运行工具",
+      "categoryEmoji": "🛠",
+      "needDeploy": true,
+      "maintenance": "正在维护",
+      "maintenanceNote": "0 天内有提交",
+      "install": {
+        "installHeading": "## Quick Start",
+        "installSection": "## Quick Start\n\n```sh\ndocker --context kiri run --rm alpine echo hello\ndocker --context kiri compose up -d\nkiri k8s start                      # single-node Kubernetes as the `kiri` kubectl context\nkiri machine create dev --distro ubuntu && kiri machine shell dev\nkiri import                         # bring images, volumes and containers over from OrbStack or Docker Desktop\n```\n\nDocker's commands also work as `kiri` commands (`kiri run`, `kiri ps`,\n`kiri compose up`, and so on), and always target Kiri.\n\n---",
+        "installCommands": [
+          "brew install --cask libracoder/kiri/kiri"
+        ],
+        "intro": "--- Make sure you have one of: - macOS 14 or later, on Apple silicon or Intel - Windows 10 or 11 with WSL 2, on x86-64 or Arm - Linux (Ubuntu, Fedora and others) macOS, with Homebrew: ```bash brew install --cask libracoder/kiri/kiri",
+        "found": true,
+        "source": "api",
+        "readmeLength": 15689
+      }
+    },
+    {
+      "repo": "heydamir/unslop",
+      "lang": "JavaScript",
+      "desc": "A Claude skill that turns vibecoded, AI-looking UI into a designed interface",
+      "stars": 20213,
+      "forks": 1233,
+      "gain": 3189,
+      "periodLabel": "stars this week",
+      "url": "https://github.com/heydamir/unslop",
+      "createdAt": "2026-10-29T15:41:21Z",
+      "pushedAt": "2026-11-15T00:55:20Z",
+      "license": "CC-BY-4.0",
+      "archived": false,
+      "openIssues": 12,
+      "topics": [],
+      "homepage": "",
+      "defaultBranch": "main",
+      "createdInWindow": false,
+      "_tier": "近 1 月新建",
+      "_ageDays": 24,
+      "gainMethod": "snapshot-diff",
+      "gainEstimated": false,
+      "topicsLine": "",
+      "ageDays": 24,
+      "isNew": true,
+      "relativeHeatPct": 15.8,
+      "category": "插件技能",
+      "categoryEmoji": "🧩",
+      "needDeploy": false,
+      "maintenance": "正在维护",
+      "maintenanceNote": "7 天内有提交",
+      "install": {
+        "installHeading": "## Install",
+        "installSection": "## Install\n\nFor Claude Code, install it as a plugin. Run this in a terminal to get it in every project:\n\n```bash\nclaude plugin install unslop --marketplace heydamir/unslop\n```\n\nOn an older Claude Code without `--marketplace`, the same in two steps:\n\n```bash\nclaude plugin marketplace add heydamir/unslop\nclaude plugin install unslop@heydamir\n```\n\nTo get it in a single project only, run the install from that project's root folder, the one you start Claude Code in, and add `--scope local`. To turn it on for everyone who works in the project, add `--scope project` instead and commit `.claude/settings.json`. Each teammate then runs this once in their own copy of the project:\n\n```bash\nclaude plugin marketplace add heydamir/unslop\nclaude plugin install unslop@heydamir --scope project\n```\n\nThen start a new Claude Code session, or run `/reload-plugins` in one that is already open.\n\nTo update, run `claude plugin update unslop@heydamir`, or turn on auto-update for the heydamir marketplace under Marketplaces in `/plugin`.\n\nIf you copied unslop into `~/.claude/skills/` or a project's `.claude/skills/` before, delete that copy, or `/unslop` keeps running it instead of the plugin.\n\nFor Codex, ask it to install the skill straight from this repo.\n\n```\n$skill-installer install https://github.com/heydamir/unslop/tree/main/skills/unslop\n```\n\nOr copy it by hand into `~/.agents/skills/`, or into `.agents/skills/` inside a single project.\n\n```bash\ngit clone https://github.com/heydamir/unslop\nmkdir -p ~/.agents/skills && cp -r unslop/skills/unslop ~/.agents/skills/\n```\n\nFor Google Antigravity, copy the skill into your skills folder.\n\n```bash\ngit clone https://github.com/heydamir/unslop\nmkdir -p ~/.gemini/config/skills && cp -r unslop/skills/unslop ~/.gemini/config/skills/\n```\n\nFor a single project, copy it into `.agents/skills/` inside that project instead.\n\nTo snapshot a live site or create a story video, install Playwright and its Chromium browser from the project directory where you run the skill:\n\n```bash\nnpm install -D playwright\nnpx playwright install chromium\n```\n\nStory videos also require ffmpeg installed and available on your PATH.",
+        "installCommands": [
+          "git clone https://github.com/heydamir/unslop\nmkdir -p ~/.agents/skills && cp -r unslop/skills/unslop ~/.agents/skills/",
+          "git clone https://github.com/heydamir/unslop\nmkdir -p ~/.gemini/config/skills && cp -r unslop/skills/unslop ~/.gemini/config/skills/",
+          "npm install -D playwright\nnpx playwright install chromium"
+        ],
+        "intro": "Created by Damir Sokolovsky ([@heydamir](https://x.com/heydamir)), who started the [Unslopping series](https://x.com/heydamir/status/2115063463063998736) on X. unslop is a skill for Claude Code, Codex and Google Antigravity that turns vibecoded, AI-looking UI into a designed interface with its own character. It finds the slop first, the purple gradients, glows, emoji labels, shouty copy and uneven spacing, then sets a direction from your product and fixes the screen pass by pass like a designer ",
+        "found": true,
+        "source": "api",
+        "readmeLength": 4846
+      }
+    },
+    {
+      "repo": "RoutineMiku/apkstart",
+      "lang": "JavaScript",
+      "desc": "Windows 上的安卓应用运行器：双击 APK 即装，应用以独立窗口与桌面图标运行，自持 QEMU 运行时",
+      "stars": 9213,
+      "forks": 877,
+      "gain": 3150,
+      "periodLabel": "stars this week",
+      "url": "https://github.com/RoutineMiku/apkstart",
+      "createdAt": "2026-10-29T13:44:03Z",
+      "pushedAt": "2026-11-22T12:18:36Z",
+      "license": "MIT",
+      "archived": false,
+      "openIssues": 112,
+      "topics": [
+        "android",
+        "android-x86",
+        "apk",
+        "electron",
+        "emulator",
+        "freeform",
+        "qemu",
+        "windows",
+        "wsa"
+      ],
+      "homepage": "",
+      "defaultBranch": "main",
+      "createdInWindow": false,
+      "_tier": "近 1 月新建",
+      "_ageDays": 24,
+      "gainMethod": "snapshot-diff",
+      "gainEstimated": false,
+      "topicsLine": "android, android-x86, apk, electron, emulator, freeform",
+      "ageDays": 24,
+      "isNew": true,
+      "relativeHeatPct": 34.2,
+      "category": "可运行工具",
+      "categoryEmoji": "🛠",
+      "needDeploy": true,
+      "maintenance": "正在维护",
+      "maintenanceNote": "0 天内有提交",
+      "install": {
+        "installHeading": null,
+        "installSection": null,
+        "installCommands": [
+          "# 1. 安装依赖（含 Electron 运行时）\nnpm install\n\n# 2. 启动并完成运行时部署（一次性下载 adb / Android Emulator / 系统镜像）\nnpm start\n\n# 3.（可选）注册 .apk 双击安装\nnpm run assoc:on\n\n# 4. 打包便携版（免安装，可直接分发）\nnpm run pack\n# 产出 dist/ApkStart-win64-portable/ApkStart.exe\n# 5. 压成 zip 发布（必须用这个脚本，别用 Compress-Archive：体积会大 5MB、塞不进 Gitee）\nnode build/zip.js dist/ApkStart-win64-portable ApkStart-win64-portable.zip"
+        ],
+        "intro": "**Windows 上的安卓应用运行器 —— 让安卓应用像 Windows 原生软件一样被安装和使用。** 注：本项目为早期版本，作者自娱自乐产物，所有修改都是作者下班和休息日在处理，开源免费，不插广告，暂时也不是很好用，没有找过营销号推广，无妄之灾。 - 🖱️ **双击 .apk 即安装**：注册 .apk 文件关联后，在资源管理器里双击 APK，自动解析 → 安装 → 生成桌面图标，全程无需打开任何模拟器界面。 - 🧩 **每个应用一个桌面图标**：图标从 APK 内部离线提取并转为多尺寸 ICO，双击桌面图标 = 直接启动该应用，与打开一个原生 Windows 软件的体验一致。 - 🪟 **应用就是一个窗口**：运行时以**带窗口**模式启动（无头模式下 Android 不出 VSYNC，应用进程活着但屏幕上是空的），ApkStart 把这块窗口改标题、换真实应用图标、按竖屏比例摆好位置，就是一个独立应用窗口；**全屏**铺满屏幕高度并居中，**窗口模式**可自由拖动缩放且按应用记忆尺寸。 - 🔍 **能被 Windows 搜到**：安装后同时创建桌面 + 开始菜单（`程",
+        "found": true,
+        "source": "api",
+        "readmeLength": 14405
+      }
+    }
+  ],
+  "allParsed": [
+    {
+      "repo": "ItsNotRexed/Leonida",
+      "gain": 14070,
+      "stars": 14070
+    },
+    {
+      "repo": "erkamyaman/rust-anything",
+      "gain": 7929,
+      "stars": 7929
+    },
+    {
+      "repo": "bookwjitchieni1986/blender-ai-mcp-addon",
+      "gain": 2745,
+      "stars": 2745
+    },
+    {
+      "repo": "iamajmeena/neonclipping",
+      "gain": 2081,
+      "stars": 2081
+    },
+    {
+      "repo": "sybil-solutions/inference-optimisation-skill",
+      "gain": 1938,
+      "stars": 1938
+    },
+    {
+      "repo": "EL4CTEO/fast-anything",
+      "gain": 1755,
+      "stars": 1755
+    },
+    {
+      "repo": "R0Y00/Xbox2Windows",
+      "gain": 1275,
+      "stars": 1275
+    },
+    {
+      "repo": "omonkeyz/xbox-emulator",
+      "gain": 1248,
+      "stars": 1248
+    },
+    {
+      "repo": "Lemxy/WinRust",
+      "gain": 1202,
+      "stars": 1202
+    },
+    {
+      "repo": "chuanqisun/spaceship",
+      "gain": 1045,
+      "stars": 1045
+    },
+    {
+      "repo": "siliconjungle/shapeshift-labs-ink-studio",
+      "gain": 1027,
+      "stars": 1027
+    },
+    {
+      "repo": "Ebony-Vinyl/dsh-our-free-model",
+      "gain": 7079,
+      "stars": 83925
+    },
+    {
+      "repo": "storytold/photocraft",
+      "gain": 1296,
+      "stars": 81024
+    },
+    {
+      "repo": "eternity4719/HowToLiveBetter",
+      "gain": 1031,
+      "stars": 77080
+    },
+    {
+      "repo": "Gathin23/cleanyourtv",
+      "gain": 1879,
+      "stars": 60348
+    },
+    {
+      "repo": "Niko1221/Strata",
+      "gain": 2209,
+      "stars": 46944
+    },
+    {
+      "repo": "storytold/craft-anything",
+      "gain": 6803,
+      "stars": 41151
+    },
+    {
+      "repo": "yetone/magpie",
+      "gain": 2593,
+      "stars": 40021
+    },
+    {
+      "repo": "NandhaKishorM/laya",
+      "gain": 243,
+      "stars": 35833
+    },
+    {
+      "repo": "ccch1mneyyy/dsh-Go",
+      "gain": 5736,
+      "stars": 30148
+    },
+    {
+      "repo": "KnifeLemon/Filee",
+      "gain": 2087,
+      "stars": 29945
+    },
+    {
+      "repo": "wheresryan22/anatomy",
+      "gain": 1103,
+      "stars": 28712
+    },
+    {
+      "repo": "deepseek-ai/DeepInfer",
+      "gain": 223,
+      "stars": 26320
+    },
+    {
+      "repo": "google-research/harness2",
+      "gain": 738,
+      "stars": 24798
+    },
+    {
+      "repo": "browser-use/jev-ultrafast",
+      "gain": 169,
+      "stars": 24709
+    },
+    {
+      "repo": "deepseek-ai/dsh-superagent-prototype",
+      "gain": 786,
+      "stars": 24223
+    },
+    {
+      "repo": "google/elephant-goldfish-model",
+      "gain": 2029,
+      "stars": 22132
+    },
+    {
+      "repo": "storytold/pdfcraft",
+      "gain": 603,
+      "stars": 21470
+    },
+    {
+      "repo": "Droid-Deck/DroidDeck",
+      "gain": 920,
+      "stars": 21344
+    },
+    {
+      "repo": "Zagitta/gpu-unlock",
+      "gain": 900,
+      "stars": 20780
+    },
+    {
+      "repo": "heydamir/unslop",
+      "gain": 3189,
+      "stars": 20213
+    },
+    {
+      "repo": "lemomo-ai/lemo-opuscar",
+      "gain": 2830,
+      "stars": 19879
+    },
+    {
+      "repo": "jub0t/Concat",
+      "gain": 1604,
+      "stars": 19613
+    },
+    {
+      "repo": "storytold/filmcraft",
+      "gain": 462,
+      "stars": 18848
+    },
+    {
+      "repo": "robbietilton/Compositor",
+      "gain": 80,
+      "stars": 18780
+    },
+    {
+      "repo": "storytold/wordcraft",
+      "gain": 328,
+      "stars": 18433
+    },
+    {
+      "repo": "tangency-labs/solidcraft",
+      "gain": 1165,
+      "stars": 17751
+    },
+    {
+      "repo": "openai/math",
+      "gain": 121,
+      "stars": 17665
+    },
+    {
+      "repo": "anefzaoui/misterdownloadmanager",
+      "gain": 5651,
+      "stars": 16537
+    },
+    {
+      "repo": "seedds/nxnative",
+      "gain": 671,
+      "stars": 16496
+    },
+    {
+      "repo": "storytold/lightcraft",
+      "gain": 243,
+      "stars": 16299
+    },
+    {
+      "repo": "yihui-dev/awesome-opus5-5-videos",
+      "gain": 776,
+      "stars": 16217
+    },
+    {
+      "repo": "BaaRai/ARTEX",
+      "gain": 2510,
+      "stars": 16135
+    },
+    {
+      "repo": "cdyforever/how-to-live-better",
+      "gain": 265,
+      "stars": 15010
+    },
+    {
+      "repo": "shihabal3amri/DiPlay",
+      "gain": 205,
+      "stars": 14094
+    },
+    {
+      "repo": "pengchujin/aerial-tv",
+      "gain": 826,
+      "stars": 12969
+    },
+    {
+      "repo": "libracoder/kiri",
+      "gain": 4359,
+      "stars": 12309
+    },
+    {
+      "repo": "Edge0-AI/Edge0",
+      "gain": 294,
+      "stars": 12211
+    },
+    {
+      "repo": "JuneYaooo/rea-video",
+      "gain": 2730,
+      "stars": 12206
+    },
+    {
+      "repo": "storytold/vectorcraft",
+      "gain": 218,
+      "stars": 12020
+    },
+    {
+      "repo": "horizon-rust/horizon",
+      "gain": 1254,
+      "stars": 11769
+    },
+    {
+      "repo": "kingcharleslzy-ai/dsh-purge",
+      "gain": 2596,
+      "stars": 11622
+    },
+    {
+      "repo": "Minireel/HGhub",
+      "gain": 2173,
+      "stars": 11521
+    },
+    {
+      "repo": "KKKKhazix/AIHOT",
+      "gain": 441,
+      "stars": 11232
+    },
+    {
+      "repo": "amosblomqvist/learnharness",
+      "gain": 1471,
+      "stars": 11139
+    },
+    {
+      "repo": "lnkiai/m3e-canvas",
+      "gain": 320,
+      "stars": 10738
+    },
+    {
+      "repo": "crmne/spotifast",
+      "gain": 270,
+      "stars": 10663
+    },
+    {
+      "repo": "janestreet/agent_skills",
+      "gain": 1339,
+      "stars": 10656
+    },
+    {
+      "repo": "Ryze-AI-Adgent/open-seo-mcp-skills",
+      "gain": 520,
+      "stars": 10644
+    },
+    {
+      "repo": "LAMDA-NeSy/Research-Starter-Kit",
+      "gain": 208,
+      "stars": 10397
+    },
+    {
+      "repo": "Jakeschincariol/replica-skill",
+      "gain": 835,
+      "stars": 10331
+    },
+    {
+      "repo": "jaredpalmer/kev",
+      "gain": 74,
+      "stars": 10083
+    },
+    {
+      "repo": "zortos293/Lichii",
+      "gain": 624,
+      "stars": 10071
+    },
+    {
+      "repo": "Albert-Weasker/niubigeo",
+      "gain": 0,
+      "stars": 10038
+    },
+    {
+      "repo": "aws/aws-emulator",
+      "gain": 1271,
+      "stars": 9902
+    },
+    {
+      "repo": "l0ng-ai/openidea",
+      "gain": 702,
+      "stars": 9841
+    },
+    {
+      "repo": "rehan-remade/universal-modder",
+      "gain": 112,
+      "stars": 9835
+    },
+    {
+      "repo": "kajisho5/ffmpeg-skill",
+      "gain": 846,
+      "stars": 9665
+    },
+    {
+      "repo": "wangzan101/Mika",
+      "gain": 812,
+      "stars": 9623
+    },
+    {
+      "repo": "HeyPuter/everything",
+      "gain": 783,
+      "stars": 9281
+    },
+    {
+      "repo": "RoutineMiku/apkstart",
+      "gain": 3150,
+      "stars": 9213
+    },
+    {
+      "repo": "Jakeschincariol/day-trader-skill",
+      "gain": 1098,
+      "stars": 9182
+    },
+    {
+      "repo": "storytold/effectcraft",
+      "gain": 275,
+      "stars": 9132
+    },
+    {
+      "repo": "openfilm/openfilm",
+      "gain": 1259,
+      "stars": 8993
+    },
+    {
+      "repo": "xiaoyang111222/cn-math-taxonomy",
+      "gain": 750,
+      "stars": 8986
+    },
+    {
+      "repo": "zai-org/ZCode",
+      "gain": 120,
+      "stars": 8832
+    },
+    {
+      "repo": "huami1314/GestaltX",
+      "gain": 4402,
+      "stars": 8804
+    },
+    {
+      "repo": "rddmwmddr/android-ad-cleaner",
+      "gain": 566,
+      "stars": 8760
+    },
+    {
+      "repo": "patch-gg/pixelfx",
+      "gain": 1077,
+      "stars": 8749
+    },
+    {
+      "repo": "Fei2411/DS-Bot",
+      "gain": 650,
+      "stars": 8700
+    },
+    {
+      "repo": "jev-chat/jev-chat-jarvis",
+      "gain": 79,
+      "stars": 8488
+    },
+    {
+      "repo": "storytold/cadcraft",
+      "gain": 240,
+      "stars": 8386
+    },
+    {
+      "repo": "unclebob/ub-mode",
+      "gain": 302,
+      "stars": 8335
+    },
+    {
+      "repo": "Jakeschincariol/instagram-agent-skill",
+      "gain": 826,
+      "stars": 8257
+    },
+    {
+      "repo": "ly05010419/MacNativeGames",
+      "gain": 1596,
+      "stars": 8206
+    },
+    {
+      "repo": "LNPANDY/NX2Apple",
+      "gain": 769,
+      "stars": 8131
+    },
+    {
+      "repo": "qingjian-team/qingjian",
+      "gain": 731,
+      "stars": 8039
+    },
+    {
+      "repo": "valentderah/totk-pc-recomp",
+      "gain": 562,
+      "stars": 8017
+    },
+    {
+      "repo": "tamaratran/fast-jev-compaction",
+      "gain": 837,
+      "stars": 8012
+    },
+    {
+      "repo": "anhao/ai-pose-gallery-zh",
+      "gain": 762,
+      "stars": 7846
+    },
+    {
+      "repo": "Lee-xeo/Claude-Cage",
+      "gain": 1682,
+      "stars": 7659
+    },
+    {
+      "repo": "mdiri-ai/SoduWork",
+      "gain": 1907,
+      "stars": 6812
+    },
+    {
+      "repo": "vercel-labs/ui",
+      "gain": 1405,
+      "stars": 6541
+    },
+    {
+      "repo": "qybaihe/bla",
+      "gain": 557,
+      "stars": 6422
+    },
+    {
+      "repo": "KKKKhazix/agent-autoloop",
+      "gain": 648,
+      "stars": 6281
+    },
+    {
+      "repo": "haydenschmitty/floorplan",
+      "gain": 1630,
+      "stars": 6221
+    },
+    {
+      "repo": "Eglantine-Community/Eglantine",
+      "gain": 177,
+      "stars": 6206
+    },
+    {
+      "repo": "interplains/Zero-Breach-Toolkit",
+      "gain": 168,
+      "stars": 5290
+    },
+    {
+      "repo": "deepseek-ai/chat-demo",
+      "gain": 1460,
+      "stars": 5277
+    },
+    {
+      "repo": "designfuchen/word-atlas",
+      "gain": 285,
+      "stars": 5195
+    },
+    {
+      "repo": "BryceYuuu/RUN",
+      "gain": 152,
+      "stars": 5017
+    },
+    {
+      "repo": "ersinkoc/phonebox",
+      "gain": 2330,
+      "stars": 4993
+    },
+    {
+      "repo": "modelflare-ai/AnyModelBot",
+      "gain": 762,
+      "stars": 4973
+    },
+    {
+      "repo": "expo/exact",
+      "gain": 519,
+      "stars": 4914
+    },
+    {
+      "repo": "mromidev/claude-animated-shorts",
+      "gain": 940,
+      "stars": 4578
+    },
+    {
+      "repo": "tangerineturtle1/NX2navi",
+      "gain": 85,
+      "stars": 4342
+    },
+    {
+      "repo": "t3dotgg/tstack",
+      "gain": 337,
+      "stars": 4297
+    },
+    {
+      "repo": "JenkinWoo/sheeridVerify",
+      "gain": 843,
+      "stars": 4158
+    },
+    {
+      "repo": "elvarofficial/teardown",
+      "gain": 411,
+      "stars": 4024
+    },
+    {
+      "repo": "benjitaylor/skills",
+      "gain": 600,
+      "stars": 3999
+    },
+    {
+      "repo": "jhaizhou-ops/S2Arm",
+      "gain": 490,
+      "stars": 3816
+    },
+    {
+      "repo": "simplexai-labs/linger",
+      "gain": 2048,
+      "stars": 3804
+    },
+    {
+      "repo": "shanselman/gputaskman",
+      "gain": 318,
+      "stars": 3696
+    },
+    {
+      "repo": "Verlintas/NOIR",
+      "gain": 93,
+      "stars": 3685
+    },
+    {
+      "repo": "havenicec/google-qr-sms-helper",
+      "gain": 781,
+      "stars": 3013
+    },
+    {
+      "repo": "toyxyz/toyxyz_RGBMocap",
+      "gain": 778,
+      "stars": 3002
+    }
+  ],
+  "enrichedAt": "2026-11-22T21:41:08.341Z",
+  "readmeAt": "2026-11-22T21:41:10.286Z"
+}
